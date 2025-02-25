@@ -46,3 +46,22 @@ fisioterapistaRouter.delete(
     authenticateJWT,
     fisioterapistaController.handleDeleteExercises
 );
+
+// chat
+fisioterapistaRouter.get(
+    "/chat/:id?",
+    authenticateJWT,
+    fisioterapistaController.handleGetChat
+);
+fisioterapistaRouter.post(
+    "/message/:id",
+    authenticateJWT,
+    fisioterapistaController.handleSendMessage
+);
+
+// appuntamenti
+fisioterapistaRouter.post(
+    "/appointment/:id",
+    authenticateJWT,
+    fisioterapistaController.handleCreateAppointment
+);

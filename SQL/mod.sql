@@ -117,11 +117,13 @@ BEFORE INSERT ON Appuntamenti
 FOR EACH ROW
 BEGIN
     DECLARE trattamento_in_corso BOOLEAN;
-    
+
     SELECT in_corso INTO trattamento_in_corso
     FROM Trattamenti
     WHERE id = NEW.trattamento_id;
     
+
+
     IF trattamento_in_corso IS NULL OR trattamento_in_corso = FALSE THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Il trattamento non è in corso';
@@ -132,9 +134,32 @@ BEGIN
         SET MESSAGE_TEXT = "L\'appuntamento deve essere successivo alla data e ora attuale";
     END IF;
     
+    IF id_appuntamento IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'La data e l\'ora dell\'appuntamento sono gia state prese';
+    END IF;
 END;//
 
 DELIMITER ;
+
+DELIMITER //
+
+CREATE TRIGGER check_data_occupata_appuntamento
+BEFORE INSERT ON Appuntamenti
+FOR EACH ROW
+BEGIN
+    DECLARE id_appuntamento INT;
+
+    SELECT id INTO id_appuntamento
+    FROM appuntamenti
+    WHERE data_appuntamento=NEW.data_appuntamento AND ora_appuntamento=NEW.ora_appuntamento;
+
+    IF id_appuntamento IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'La data e l\'ora dell\'appuntamento sono gia state prese';
+    END IF;
+END;//    
+
 
 DELIMITER //
 
