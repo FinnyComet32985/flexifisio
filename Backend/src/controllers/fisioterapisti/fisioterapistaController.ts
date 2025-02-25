@@ -363,7 +363,7 @@ export const handleGetExercises = async (req: Request, res: Response) => {
 
     if (!id) {
         const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT * FROM Esercizi WHERE fisioterapista_id = ?;",
+            "SELECT nome, descrizione, descrizione_svolgimento, consigli_svolgimento, video  FROM Esercizi WHERE fisioterapista_id = ?;",
             [fisioterapistaId]
         );
 
@@ -376,7 +376,7 @@ export const handleGetExercises = async (req: Request, res: Response) => {
         }
     } else {
         const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT * FROM Esercizi WHERE fisioterapista_id = ? AND id = ?;",
+            "SELECT nome, descrizione, descrizione_svolgimento, consigli_svolgimento, video FROM Esercizi WHERE fisioterapista_id = ? AND id = ?;",
             [fisioterapistaId, id]
         );
 
@@ -386,6 +386,28 @@ export const handleGetExercises = async (req: Request, res: Response) => {
                 .send();
         } else {
             res.status(200).json(rows).send();
+        }
+    }
+};
+
+export const handleDeleteExercises = async (req: Request, res: Response) => {
+    const fisioterapistaId = req.body.jwtPayload.id;
+    const id = req.params.id;
+
+    if (!id) {
+        res.status(400).json({ message: "Parametri mancanti" }).send();
+    } else {
+        const [result] = await pool.query<ResultSetHeader>(
+            "DELETE FROM Esercizi WHERE fisioterapista_id = ? AND id = ?;",
+            [fisioterapistaId, id]
+        );
+
+        if (result.affectedRows === 0) {
+            res.status(500).json({
+                message: "Errore durante la cancellazione",
+            });
+        } else {
+            res.status(200).json({ message: "Allenamento cancellato" }).send();
         }
     }
 };
