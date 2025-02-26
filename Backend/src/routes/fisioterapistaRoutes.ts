@@ -5,6 +5,7 @@ import * as patientController from "../controllers/fisioterapisti/patientControl
 import * as chatController from "../controllers/fisioterapisti/chatController";
 import * as exerciseController from "../controllers/fisioterapisti/exerciseController";
 import * as appointmentController from "../controllers/fisioterapisti/appointmentController";
+import * as trainingCardController from "../controllers/fisioterapisti/trainingCardController";
 
 export const fisioterapistaRouter = Router();
 
@@ -80,4 +81,21 @@ fisioterapistaRouter.get(
     "/appointment/:id?",
     authenticateJWT,
     appointmentController.handleGetAppointments
+);
+
+// gestione schede di allenamento
+fisioterapistaRouter.post(
+    "/trainingCard/:id",
+    authenticateJWT,
+    trainingCardController.handleCreateTrainingCard
+);
+fisioterapistaRouter.get(
+    "/trainingCard/:id",
+    authenticateJWT,
+    trainingCardController.handleGetTrainingCards
+);
+fisioterapistaRouter.delete(
+    "/trainingCard/:id/:schedaId",
+    authenticateJWT,
+    trainingCardController.handleDeleteTrainingCard
 );
