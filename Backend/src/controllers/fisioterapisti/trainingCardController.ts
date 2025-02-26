@@ -66,26 +66,50 @@ export const handleGetTrainingCards = async (req: Request, res: Response) => {
 // delete scheda di allenamento
 export const handleDeleteTrainingCard = async (req: Request, res: Response) => {
     const fisioterapistaId = req.body.jwtPayload.id;
-    const schedaId = parseInt(req.params.id);
+    const scheda_id = parseInt(req.params.id);
 
     const [result] = await pool.query<RowDataPacket[]>(
-        "SELECT trattamenti.id FROM trattamenti JOIN schedeallenamento ON trattamenti.id=schedeallenamento.trattamento_id WHERE trattamenti.fisioterapista_id=? AND schedeallenamento.id=? AND trattamenti.in_corso=1;",
-        [fisioterapistaId, schedaId]
+        "SELECT trattamenti.id as trattamenti_id, trattamenti.fisioterapista_id as fisioterapista_id, trattamenti.in_corso as in_corso, schedeallenamento.id as scheda_id FROM trattamenti JOIN schedeallenamento ON trattamenti.id=schedeallenamento.trattamento_id;",
+        []
     );
 
     if (result.length === 0) {
-        res.status(404).json({ message: "Nessuna scheda trovata" }).send();
+        res.status(500)
+            .json({ error: "errore nella cancella della scheda" })
+            .send();
     } else {
-        const [deleteScheda] = await pool.query<ResultSetHeader>(
-            "DELETE FROM schedeallenamento WHERE id =? AND trattamento_id =?;",
-            [schedaId, result[0].id]
-        );
-        if (deleteScheda.affectedRows === 0) {
+        let dati = result.find((dato) => dato.scheda_id === scheda_id);
+        if (!dati) {
             res.status(404)
                 .json({ message: "Scheda non trovata o non esistente" })
                 .send();
         } else {
-            res.status(200).json({ message: "Scheda eliminata" }).send();
+            if (dati.fisioterapista_id !== fisioterapistaId) {
+                res.status(403)
+                    .json({
+                        message:
+                            "Non si dispone dei permessi per cancellare questa scheda",
+                    })
+                    .send();
+            } else if (dati.in_corso === 0) {
+                res.status(400)
+                    .json({ message: "Il trattamento non è in corso" })
+                    .send();
+            } else {
+                const [deleteScheda] = await pool.query<ResultSetHeader>(
+                    "DELETE FROM schedeallenamento WHERE id =?;",
+                    [scheda_id]
+                );
+                if (deleteScheda.affectedRows === 0) {
+                    res.status(404)
+                        .json({ message: "Errore nella cancellazione" })
+                        .send();
+                } else {
+                    res.status(200)
+                        .json({ message: "Scheda eliminata" })
+                        .send();
+                }
+            }
         }
     }
 };
