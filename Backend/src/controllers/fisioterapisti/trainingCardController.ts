@@ -1,3 +1,4 @@
+import { captureRejectionSymbol } from "events";
 import pool from "../../database/connection";
 import { Request, Response } from "express";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
@@ -65,14 +66,15 @@ export const handleGetTrainingCards = async (req: Request, res: Response) => {
 // delete scheda di allenamento
 export const handleDeleteTrainingCard = async (req: Request, res: Response) => {
     const fisioterapistaId = req.body.jwtPayload.id;
-    const paziente_id = req.params.id;
-    const schedaId = parseInt(req.params.schedaId);
+    const schedaId = parseInt(req.params.id);
+
     const [result] = await pool.query<RowDataPacket[]>(
-        "SELECT id FROM trattamenti WHERE fisioterapista_id =? AND paziente_id =? AND in_corso=1;",
-        [fisioterapistaId, paziente_id]
+        "SELECT trattamenti.id FROM trattamenti JOIN schedeallenamento ON trattamenti.id=schedeallenamento.trattamento_id WHERE trattamenti.fisioterapista_id=? AND schedeallenamento.id=? AND trattamenti.in_corso=1;",
+        [fisioterapistaId, schedaId]
     );
+
     if (result.length === 0) {
-        res.status(404).json({ message: "Nessun trattamento trovato" }).send();
+        res.status(404).json({ message: "Nessuna scheda trovata" }).send();
     } else {
         const [deleteScheda] = await pool.query<ResultSetHeader>(
             "DELETE FROM schedeallenamento WHERE id =? AND trattamento_id =?;",
@@ -88,3 +90,9 @@ export const handleDeleteTrainingCard = async (req: Request, res: Response) => {
     }
 };
 // update scheda di allenamento
+export const handleUpdateTrainingCard = async (req: Request, res: Response) => {
+    const fisioterapistaId = req.body.jwtPayload.id;
+    const paziente_id = req.params.id;
+    const schedaId = parseInt(req.params.schedaId);
+    const { nome, tipo_scheda, note } = req.body;
+};

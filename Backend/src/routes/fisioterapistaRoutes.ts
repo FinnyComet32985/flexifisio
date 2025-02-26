@@ -84,18 +84,23 @@ fisioterapistaRouter.get(
 );
 
 // gestione schede di allenamento
-fisioterapistaRouter.post(
-    "/trainingCard/:id",
-    authenticateJWT,
-    trainingCardController.handleCreateTrainingCard
-);
 fisioterapistaRouter.get(
     "/trainingCard/:id",
     authenticateJWT,
     trainingCardController.handleGetTrainingCards
 );
-fisioterapistaRouter.delete(
+fisioterapistaRouter.post(
+    "/trainingCard/:id",
+    authenticateJWT,
+    trainingCardController.handleCreateTrainingCard
+);
+fisioterapistaRouter.patch(
     "/trainingCard/:id/:schedaId",
+    authenticateJWT,
+    trainingCardController.handleUpdateTrainingCard
+);
+fisioterapistaRouter.delete(
+    "/trainingCard/:id",
     authenticateJWT,
     trainingCardController.handleDeleteTrainingCard
 );
