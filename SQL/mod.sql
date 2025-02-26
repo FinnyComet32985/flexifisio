@@ -143,7 +143,6 @@ END;//
 DELIMITER ;
 
 DELIMITER //
-
 CREATE TRIGGER check_data_occupata_appuntamento
 BEFORE INSERT ON Appuntamenti
 FOR EACH ROW
@@ -160,9 +159,25 @@ BEGIN
     END IF;
 END;//    
 
+DELIMITER //
+CREATE TRIGGER check_data_occupata_appuntamento_update
+BEFORE UPDATE ON Appuntamenti
+FOR EACH ROW
+BEGIN
+    DECLARE id_appuntamento INT;
+
+    SELECT id INTO id_appuntamento
+    FROM appuntamenti
+    WHERE data_appuntamento=NEW.data_appuntamento AND ora_appuntamento=NEW.ora_appuntamento;
+
+    IF id_appuntamento IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'La data e l\'ora dell\'appuntamento sono gia state prese';
+    END IF;
+END;//  
+
 
 DELIMITER //
-
 CREATE TRIGGER check_trattamento_in_corso_appuntamento_update
 BEFORE UPDATE ON Appuntamenti
 FOR EACH ROW
@@ -181,10 +196,6 @@ BEGIN
     IF (NEW.data_appuntamento < CURRENT_DATE) OR (NEW.data_appuntamento = CURRENT_DATE AND NEW.ora_appuntamento <= CURRENT_TIME()) THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = "L\'appuntamento deve essere successivo alla data e ora attuale";
-    END IF;
-    IF OLD.data_appuntamento IS NOT NULL AND OLD.ora_appuntamento IS NOT NULL AND (NEW.data_appuntamento < OLD.data_appuntamento OR (NEW.data_appuntamento = OLD.data_appuntamento AND NEW.ora_appuntamento < OLD.ora_appuntamento)) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = "Non è possibile spostare l\'appuntamento in una data precedente";
     END IF;
     
 END;//

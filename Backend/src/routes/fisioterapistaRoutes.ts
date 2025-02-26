@@ -1,67 +1,83 @@
-import { Router } from "express";
+import { NextFunction, Router } from "express";
 import { authenticateJWT } from "middleware/autenticateJWT";
-import * as fisioterapistaController from "../controllers/fisioterapisti/fisioterapistaController";
+import * as authController from "../controllers/fisioterapisti/authController";
+import * as patientController from "../controllers/fisioterapisti/patientController";
+import * as chatController from "../controllers/fisioterapisti/chatController";
+import * as exerciseController from "../controllers/fisioterapisti/exerciseController";
+import * as appointmentController from "../controllers/fisioterapisti/appointmentController";
 
 export const fisioterapistaRouter = Router();
 
 // gestione autenticazione fisioterapista
-fisioterapistaRouter.post("/register", fisioterapistaController.handleRegister);
-fisioterapistaRouter.post("/login", fisioterapistaController.handleLogin);
-fisioterapistaRouter.post("/logout", fisioterapistaController.handleLogout);
-fisioterapistaRouter.post(
-    "/refreshToken",
-    fisioterapistaController.handleRefreshToken
-);
+fisioterapistaRouter.post("/register", authController.handleRegister);
+fisioterapistaRouter.post("/login", authController.handleLogin);
+fisioterapistaRouter.post("/logout", authController.handleLogout);
+fisioterapistaRouter.post("/refreshToken", authController.handleRefreshToken);
 
 // gestione pazienti
 fisioterapistaRouter.get(
     "/patient/:id?",
     authenticateJWT,
-    fisioterapistaController.handleGetPatient
+    patientController.handleGetPatient
 );
 fisioterapistaRouter.post(
     "/patient",
     authenticateJWT,
-    fisioterapistaController.handleNewPatient
+    patientController.handleNewPatient
 );
 fisioterapistaRouter.delete(
     "/patient/:id",
     authenticateJWT,
-    fisioterapistaController.handleEndTreatment
+    patientController.handleEndTreatment
 );
 
 // gestione esercizi
 fisioterapistaRouter.post(
     "/excercise",
     authenticateJWT,
-    fisioterapistaController.handleCreateExcercise
+    exerciseController.handleCreateExcercise
 );
 fisioterapistaRouter.get(
     "/excercise/:id?",
     authenticateJWT,
-    fisioterapistaController.handleGetExercises
+    exerciseController.handleGetExercises
 );
 fisioterapistaRouter.delete(
     "/excercise/:id",
     authenticateJWT,
-    fisioterapistaController.handleDeleteExercises
+    exerciseController.handleDeleteExercises
 );
 
 // chat
 fisioterapistaRouter.get(
     "/chat/:id?",
     authenticateJWT,
-    fisioterapistaController.handleGetChat
+    chatController.handleGetChat
 );
 fisioterapistaRouter.post(
     "/message/:id",
     authenticateJWT,
-    fisioterapistaController.handleSendMessage
+    chatController.handleSendMessage
 );
 
 // appuntamenti
 fisioterapistaRouter.post(
     "/appointment/:id",
     authenticateJWT,
-    fisioterapistaController.handleCreateAppointment
+    appointmentController.handleCreateAppointment
+);
+fisioterapistaRouter.patch(
+    "/appointment/:id",
+    authenticateJWT,
+    appointmentController.handleUpdateAppointment
+);
+fisioterapistaRouter.delete(
+    "/appointment/:id",
+    authenticateJWT,
+    appointmentController.handleDeleteAppointments
+);
+fisioterapistaRouter.get(
+    "/appointment/:id?",
+    authenticateJWT,
+    appointmentController.handleGetAppointments
 );
