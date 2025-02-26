@@ -95,7 +95,7 @@ fisioterapistaRouter.post(
     trainingCardController.handleCreateTrainingCard
 );
 fisioterapistaRouter.patch(
-    "/trainingCard/:id/:schedaId",
+    "/trainingCard/:id",
     authenticateJWT,
     trainingCardController.handleUpdateTrainingCard
 );

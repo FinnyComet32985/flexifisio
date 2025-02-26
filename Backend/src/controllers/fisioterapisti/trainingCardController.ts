@@ -116,7 +116,50 @@ export const handleDeleteTrainingCard = async (req: Request, res: Response) => {
 // update scheda di allenamento
 export const handleUpdateTrainingCard = async (req: Request, res: Response) => {
     const fisioterapistaId = req.body.jwtPayload.id;
-    const paziente_id = req.params.id;
-    const schedaId = parseInt(req.params.schedaId);
+    const scheda_id = parseInt(req.params.id);
     const { nome, tipo_scheda, note } = req.body;
+
+    const [result] = await pool.query<RowDataPacket[]>(
+        "SELECT trattamenti.id as trattamenti_id, trattamenti.fisioterapista_id as fisioterapista_id, trattamenti.in_corso as in_corso, schedeallenamento.id as scheda_id FROM trattamenti JOIN schedeallenamento ON trattamenti.id=schedeallenamento.trattamento_id;",
+        []
+    );
+    if (result.length === 0) {
+        res.status(500)
+            .json({ error: "errore nella modifica della scheda" })
+            .send();
+    } else {
+        let dati = result.find((dato) => dato.scheda_id === scheda_id);
+        if (!dati) {
+            res.status(404)
+                .json({ message: "Scheda non trovata o non esistente" })
+                .send();
+        } else {
+            if (dati.fisioterapista_id !== fisioterapistaId) {
+                res.status(403)
+                    .json({
+                        message:
+                            "Non si dispone dei permessi per cancellare questa scheda",
+                    })
+                    .send();
+            } else if (dati.in_corso === 0) {
+                res.status(400)
+                    .json({ message: "Il trattamento non è in corso" })
+                    .send();
+            } else {
+                const [deleteScheda] = await pool.query<ResultSetHeader>(
+                    "UPDATE schedeallenamento SET nome =?, tipo_scheda =?, note =? WHERE id =?;",
+                    [nome, tipo_scheda, note, scheda_id]
+                );
+                if (deleteScheda.affectedRows === 0) {
+                    res.status(404)
+                        .json({ message: "Errore nella modifica" })
+                        .send();
+                } else {
+                    res.status(200)
+                        .json({ message: "Scheda modificata" })
+                        .send();
+                }
+            }
+        }
+    }
 };
