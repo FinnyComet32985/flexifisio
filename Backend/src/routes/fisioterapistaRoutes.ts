@@ -34,17 +34,17 @@ fisioterapistaRouter.delete(
 
 // gestione esercizi
 fisioterapistaRouter.post(
-    "/excercise",
+    "/exercise",
     authenticateJWT,
-    exerciseController.handleCreateExcercise
+    exerciseController.handleCreateexercise
 );
 fisioterapistaRouter.get(
-    "/excercise/:id?",
+    "/exercise/:id?",
     authenticateJWT,
     exerciseController.handleGetExercises
 );
 fisioterapistaRouter.delete(
-    "/excercise/:id",
+    "/exercise/:id",
     authenticateJWT,
     exerciseController.handleDeleteExercises
 );
@@ -103,4 +103,21 @@ fisioterapistaRouter.delete(
     "/trainingCard/:id",
     authenticateJWT,
     trainingCardController.handleDeleteTrainingCard
+);
+// aggiunta di un esercizio alla scheda di allenamento
+fisioterapistaRouter.post(
+    "/trainingCard/:id/exercise",
+    authenticateJWT,
+    trainingCardController.handleAddExerciseToTrainingCard
+);
+// eliminazione di un esercizio dalla scheda di allenamento
+fisioterapistaRouter.delete(
+    "/trainingCard/:id/exercise/:exerciseId",
+    authenticateJWT,
+    trainingCardController.handleDeleteExerciseFromTrainingCard
+);
+fisioterapistaRouter.patch(
+    "/trainingCard/:id/exercise",
+    authenticateJWT,
+    trainingCardController.handleUpdateExerciseFromTrainingCard
 );

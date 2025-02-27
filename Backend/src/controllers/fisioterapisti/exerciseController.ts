@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 // crea esercizio
-export const handleCreateExcercise = async (req: Request, res: Response) => {
+export const handleCreateexercise = async (req: Request, res: Response) => {
     const fisioterapistaId = req.body.jwtPayload.id;
 
     const {
