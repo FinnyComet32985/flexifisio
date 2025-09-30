@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 // crea esercizio
-export const handleCreateexercise = async (req: Request, res: Response) => {
+export const handleCreateExercise = async (req: Request, res: Response) => {
     const fisioterapistaId = req.body.jwtPayload.id;
 
     const {
@@ -25,7 +25,7 @@ export const handleCreateexercise = async (req: Request, res: Response) => {
         const [result] = await pool.query<ResultSetHeader>(
             "INSERT INTO Esercizi (nome, descrizione, descrizione_svolgimento, consigli_svolgimento, video, fisioterapista_id) VALUES (?,?,?,?,?,?);",
             [
-                nome,
+                nome, //? deve essere univoco per fisioterapista
                 descrizione,
                 descrizione_svolgimento,
                 consigli_svolgimento,
@@ -50,7 +50,7 @@ export const handleGetExercises = async (req: Request, res: Response) => {
 
     if (!id) {
         const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT nome, descrizione, descrizione_svolgimento, consigli_svolgimento, video  FROM Esercizi WHERE fisioterapista_id = ?;",
+            "SELECT id, nome, descrizione, descrizione_svolgimento, consigli_svolgimento, video  FROM Esercizi WHERE fisioterapista_id = ?;",
             [fisioterapistaId]
         );
 
@@ -63,7 +63,7 @@ export const handleGetExercises = async (req: Request, res: Response) => {
         }
     } else {
         const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT nome, descrizione, descrizione_svolgimento, consigli_svolgimento, video FROM Esercizi WHERE fisioterapista_id = ? AND id = ?;",
+            "SELECT id, nome, descrizione, descrizione_svolgimento, consigli_svolgimento, video FROM Esercizi WHERE fisioterapista_id = ? AND id = ?;",
             [fisioterapistaId, id]
         );
 

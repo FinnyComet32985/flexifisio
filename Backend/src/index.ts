@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { fisioterapistaRouter } from "./routes/fisioterapistaRoutes";
+import { fisioterapistaRouter } from "./routes/fisioterapisti/fisioterapistaRoutes";
 import cookieParser from "cookie-parser";
 const app = express();
 

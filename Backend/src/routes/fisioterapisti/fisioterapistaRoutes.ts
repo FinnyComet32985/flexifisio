@@ -1,11 +1,11 @@
-import { NextFunction, Router } from "express";
+import { Router } from "express";
 import { authenticateJWT } from "middleware/autenticateJWT";
-import * as authController from "../controllers/fisioterapisti/authController";
-import * as patientController from "../controllers/fisioterapisti/patientController";
-import * as chatController from "../controllers/fisioterapisti/chatController";
-import * as exerciseController from "../controllers/fisioterapisti/exerciseController";
-import * as appointmentController from "../controllers/fisioterapisti/appointmentController";
-import * as trainingCardController from "../controllers/fisioterapisti/trainingCardController";
+import * as authController from "../../controllers/fisioterapisti/authController";
+import * as patientController from "../../controllers/fisioterapisti/patientController";
+import * as chatController from "../../controllers/fisioterapisti/chatController";
+import * as exerciseController from "../../controllers/fisioterapisti/exerciseController";
+import * as appointmentController from "../../controllers/fisioterapisti/appointmentController";
+import * as trainingCardController from "../../controllers/fisioterapisti/trainingCardController";
 
 export const fisioterapistaRouter = Router();
 
@@ -36,7 +36,7 @@ fisioterapistaRouter.delete(
 fisioterapistaRouter.post(
     "/exercise",
     authenticateJWT,
-    exerciseController.handleCreateexercise
+    exerciseController.handleCreateExercise
 );
 fisioterapistaRouter.get(
     "/exercise/:id?",

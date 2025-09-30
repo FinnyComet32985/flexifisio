@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 const secretKey = process.env.Access_token_secrete ?? "default-secret-key";
+
 export const authenticateJWT = async (
     req: Request,
     res: Response,
