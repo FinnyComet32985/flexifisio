@@ -110,6 +110,9 @@ fisioterapistaRouter.post(
     authenticateJWT,
     trainingCardController.handleAddExerciseToTrainingCard
 );
+
+//TODO manca la visualizzazioe degli esercizi nella scheda di allenamento
+
 // eliminazione di un esercizio dalla scheda di allenamento
 fisioterapistaRouter.delete(
     "/trainingCard/:id/exercise/:exerciseId",
@@ -121,3 +124,8 @@ fisioterapistaRouter.patch(
     authenticateJWT,
     trainingCardController.handleUpdateExerciseFromTrainingCard
 );
+
+//TODO manca la visualizzazione del profilo del fisioterapista
+
+//TODO mancano i dati da considerare per creare il grafico nel profilo
+//TODO manca la visualizzazione dei questionari compilati dagli utenti
