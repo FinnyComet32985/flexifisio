@@ -1,4 +1,4 @@
-import pool from "database/connection";
+import pool from "../../database/connection";
 import { Request, Response } from "express";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 

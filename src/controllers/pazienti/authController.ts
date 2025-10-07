@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import pool from "database/connection";
+import pool from "../../database/connection";
 import { RowDataPacket } from "mysql2";
 import bcrypt from "bcryptjs";
-import HttpStatus from "utils/httpstatus";
-import ResponseModel from "utils/response";
-import { signAccess, signRefresh } from "utils/jwt";
+import HttpStatus from "../../utils/httpstatus";
+import ResponseModel from "../../utils/response";
+import { signAccess, signRefresh } from "../../utils/jwt";
 
 export async function register(req: Request, res: Response) {
   try {

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticateJWT } from "middleware/autenticateJWT";
+import { authenticateJWT } from "../../middleware/autenticateJWT";
 import * as authController from "../../controllers/fisioterapisti/authController";
 import * as patientController from "../../controllers/fisioterapisti/patientController";
 import * as chatController from "../../controllers/fisioterapisti/chatController";
