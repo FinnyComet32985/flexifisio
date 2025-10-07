@@ -4,7 +4,7 @@ import { RowDataPacket } from "mysql2";
 import bcrypt from "bcryptjs";
 import HttpStatus from "../../utils/httpstatus";
 import ResponseModel from "../../utils/response";
-import { signAccess, signRefresh } from "../../utils/jwt";
+import { signAccess, signRefresh, verifyRefresh } from "../../utils/jwt";
 
 export async function register(req: Request, res: Response) {
   try {
@@ -99,13 +99,10 @@ export async function login(req: Request, res: Response) {
     const accessToken = signAccess(payload);
     const refreshToken = signRefresh(payload);
     
-    const hashRefreshToken = await bcrypt.hash(refreshToken, 10);
-    
-    console.log("OK")
     await pool.query<RowDataPacket[]>(
         "INSERT INTO refresh_tokens(token_hash, id_user, user_type, expires_at) VALUES (?, ?, ?, ?)",
         [
-            hashRefreshToken,
+            refreshToken,
             user.id,
             'P',
             new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -130,64 +127,61 @@ export async function login(req: Request, res: Response) {
   }
 }
 
-
-// Devo sistemarlo
 export async function refreshToken(req: Request, res: Response) {
   try {
     const { refreshToken } = req.cookies;
-
+    
     if (!refreshToken) {
       return res.status(HttpStatus.BAD_REQUEST.code).json(
         new ResponseModel(HttpStatus.BAD_REQUEST.code, HttpStatus.BAD_REQUEST.status, 'refreshToken is required')
       );
     }
 
-    const [ tokens ] = await pool.query<RowDataPacket[]>(
-        `SELECT * from refresh_tokens Where revoked = 0`
+    const [ data ] = await pool.query<RowDataPacket[]>(
+        `SELECT * from refresh_tokens Where token_hash = ?`,
+        [refreshToken]
     )
 
-    let foundToken = null;
-    for (const token of tokens) {
-      const match = await bcrypt.compare(refreshToken, token.tokenHash);
-      if (match) {
-        foundToken = token;
-        break;
-      }
-    }
-
-    if (!foundToken){
+    if (data.length == 0){
         return res.status(HttpStatus.UNAUTHORIZED.code).json(
             new ResponseModel(HttpStatus.UNAUTHORIZED.code, HttpStatus.UNAUTHORIZED.status, 'Refresh token is revoked')
         );
     }
 
-    if (foundToken.expiresAt && new Date(foundToken.expiresAt) < new Date()) {
+    const token = data[0];
+
+    const decoded = verifyRefresh(token.token_hash)
+
+    if (!decoded || !(decoded as any).exp){
+      return res.status(HttpStatus.UNAUTHORIZED.code).json(
+        new ResponseModel(HttpStatus.UNAUTHORIZED.code, HttpStatus.UNAUTHORIZED.status, 'Refresh token is expires')
+      );
+    }
+
+    if (token.expiresAt && new Date(token.expiresAt) < new Date() && (decoded as any).exp < Math.floor(Date.now() / 1000)) {
         return res.status(HttpStatus.UNAUTHORIZED.code).json(
             new ResponseModel(HttpStatus.UNAUTHORIZED.code, HttpStatus.UNAUTHORIZED.status, 'Refresh token is expires')
         );
     }
 
-    if(foundToken.user_type != 'P'){
+    if(token.user_type != 'P'){
         return res.status(HttpStatus.CONFLICT.code).json(
             new ResponseModel(HttpStatus.CONFLICT.code, HttpStatus.CONFLICT.status, 'Incoerenza tra token e user')
         );
     }
 
     const payload = { 
-      id: foundToken.id_user
+      id: token.id_user
     };
     // Genera nuovi token
     const newAccessToken = signAccess(payload);
     const newRefreshToken = signRefresh(payload);
 
-    // Salva nuovo refresh token hashato
-    const hashRefreshToken = await bcrypt.hash(newRefreshToken, 10);
-
     await pool.query<RowDataPacket[]>(
         "INSERT INTO refresh_tokens(token_hash, id_user, user_type, expires_at) VALUES (?, ?, ?, ?)",
         [
-            hashRefreshToken,
-            foundToken.id_user,
+            newRefreshToken,
+            token.id_user,
             'P',
             new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         ]
@@ -196,7 +190,7 @@ export async function refreshToken(req: Request, res: Response) {
     await pool.query<RowDataPacket[]>(
         "UPDATE refresh_tokens SET revoked = 1 WHERE id = ?",
         [
-            foundToken.id
+            token.id
         ]
     );
     
@@ -217,12 +211,9 @@ export async function refreshToken(req: Request, res: Response) {
   }
 }
 
-/* Da finire
 export async function logout(req: Request, res: Response) {
   try {
     const { refreshToken } = req.cookies;
-
-    console.log("Test Logout", refreshToken)
 
     if (!refreshToken) {
       return res.status(HttpStatus.BAD_REQUEST.code).json(
@@ -230,7 +221,12 @@ export async function logout(req: Request, res: Response) {
       );
     }
 
-    await AuthService.logout(refreshToken);
+    await pool.query<RowDataPacket[]>(
+      "UPDATE refresh_tokens SET revoked = 1 WHERE token_hash = ?",
+      [
+        refreshToken
+      ]
+    );
 
     res.clearCookie('refreshToken', {
       httpOnly: true,
@@ -248,4 +244,3 @@ export async function logout(req: Request, res: Response) {
     );
   }
 }
-  */
