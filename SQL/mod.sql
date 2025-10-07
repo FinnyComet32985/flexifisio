@@ -3,6 +3,8 @@ CREATE DATABASE IF NOT EXISTS flexifisio_db;
 
 USE flexifisio_db;
 
+SET GLOBAL event_scheduler = ON; -- Mi serve per la pulizia automatica della tabella refresh token
+
 -- Tabella pazienti
 CREATE TABLE Pazienti (
     id INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
@@ -27,6 +29,26 @@ CREATE TABLE Fisioterapisti (
     refreshToken VARCHAR(255) UNIQUE NULL
 );
 
+-- Ho creato questa tablella per avere una gestione dei refresh token unica per entrambi gli utenti
+-- Nel caso vedi come l'ho usata io nell'authController pazienti e se qualcosa chiedimi.
+
+-- Tabella refresh token
+CREATE TABLE refresh_tokens (
+  id INT UNSIGNED AUTO_INCREMENT,
+  token_hash VARCHAR(512) NOT NULL UNIQUE,
+  id_user INT NOT NULL,
+  user_type ENUM('P','F') NOT NULL,
+  revoked BOOLEAN NOT NULL DEFAULT 0,
+  expires_at DATETIME NOT NULL,
+  PRIMARY KEY(id)
+);
+
+CREATE EVENT IF NOT EXISTS cleanup_expired_refresh_tokens
+ON SCHEDULE EVERY 1 HOURS
+DO
+DELETE FROM refresh_tokens WHERE expires_at < NOW() OR revoked = 1;
+
+--
 
 -- Tabella trattamenti
 CREATE TABLE Trattamenti (
