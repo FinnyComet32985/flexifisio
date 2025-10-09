@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticateJWT } from "../../middleware/autenticateJWT";
 import * as authController from "../../controllers/fisioterapisti/authController";
+import * as profileController from "../../controllers/fisioterapisti/profileController";
 import * as patientController from "../../controllers/fisioterapisti/patientController";
 import * as chatController from "../../controllers/fisioterapisti/chatController";
 import * as exerciseController from "../../controllers/fisioterapisti/exerciseController";
@@ -14,6 +15,13 @@ fisioterapistaRouter.post("/register", authController.handleRegister);
 fisioterapistaRouter.post("/login", authController.handleLogin);
 fisioterapistaRouter.post("/logout", authController.handleLogout);
 fisioterapistaRouter.post("/refreshToken", authController.handleRefreshToken);
+
+// gestione profilo fisioterapista
+fisioterapistaRouter.get(
+    "/profile",
+    authenticateJWT,
+    profileController.handleGetProfile
+);
 
 // gestione pazienti
 fisioterapistaRouter.get(
@@ -111,7 +119,13 @@ fisioterapistaRouter.post(
     trainingCardController.handleAddExerciseToTrainingCard
 );
 
-//TODO manca la visualizzazioe degli esercizi nella scheda di allenamento
+//! verificare il funzionamento
+
+fisioterapistaRouter.get(
+    "/trainingCard/:id/exercise",
+    authenticateJWT,
+    trainingCardController.handleGetExercisesFromTrainingCard
+);
 
 // eliminazione di un esercizio dalla scheda di allenamento
 fisioterapistaRouter.delete(
@@ -124,8 +138,6 @@ fisioterapistaRouter.patch(
     authenticateJWT,
     trainingCardController.handleUpdateExerciseFromTrainingCard
 );
-
-//TODO manca la visualizzazione del profilo del fisioterapista
 
 //TODO mancano i dati da considerare per creare il grafico nel profilo
 //TODO manca la visualizzazione dei questionari compilati dagli utenti

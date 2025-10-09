@@ -233,6 +233,34 @@ export const handleAddExerciseToTrainingCard = async (
         }
     }
 };
+
+export const handleGetExercisesFromTrainingCard = async (
+    req: Request,
+    res: Response
+) => {
+    const fisioterapistaId = req.body.jwtPayload.id;
+    const scheda_id = parseInt(req.params.id);
+
+    const [trattamenti_id] = await pool.query<RowDataPacket[]>(
+        "SELECT trattamenti.id FROM trattamenti JOIN schedeallenamento ON schedeallenamento.trattamento_id=trattamenti.id WHERE trattamenti.fisioterapista_id=? AND trattamenti.in_corso=1 AND schedeallenamento.id=?;",
+        [fisioterapistaId, scheda_id]
+    );
+
+    if (trattamenti_id.length === 0) {
+        res.status(404).json({ message: "Nessun trattamento trovato" }).send();
+    } else {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            "SELECT esercizi.* FROM esercizi JOIN schedaesercizi ON esercizi.id=schedaesercizi.esercizio_id WHERE schedaesercizi.scheda_id=?;",
+            [scheda_id]
+        );
+        if (rows.length === 0) {
+            res.status(404)
+                .json({ message: "Nessun esercizio trovato" })
+                .send();
+        }
+        res.status(200).json(rows).send();
+    }
+};
 // elimina esercizio
 export const handleDeleteExerciseFromTrainingCard = async (
     req: Request,
