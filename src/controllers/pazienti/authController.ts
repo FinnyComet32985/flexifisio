@@ -5,242 +5,357 @@ import bcrypt from "bcryptjs";
 import HttpStatus from "../../utils/httpstatus";
 import ResponseModel from "../../utils/response";
 import { signAccess, signRefresh, verifyRefresh } from "../../utils/jwt";
+import { v4 as uuidv4 } from "uuid";
 
+/**
+ * 🔹 REGISTER - Crea un nuovo paziente
+ */
 export async function register(req: Request, res: Response) {
   try {
-    const { nome, cognome, email, data_nascita, password, genere, altezza, peso, diagnosi } = req.body;
+    const {
+      nome,
+      cognome,
+      email,
+      data_nascita,
+      password,
+      genere,
+      altezza,
+      peso,
+      diagnosi,
+    } = req.body;
 
-    if(
-        !nome ||
-        !cognome ||
-        !email ||
-        !data_nascita ||
-        !password ||
-        !(genere == 'M' || genere == 'F' || genere == 'Altro') ||
-        !altezza || 
-        !peso ||
-        !diagnosi
-    ){
-        return res.status(HttpStatus.BAD_REQUEST.code).json(
-            new ResponseModel(HttpStatus.BAD_REQUEST.code, HttpStatus.BAD_REQUEST.status, 'Bad Request')
+    // Validazioni base
+    if (
+      !nome ||
+      !cognome ||
+      !email ||
+      !data_nascita ||
+      !password ||
+      !(genere === "M" || genere === "F" || genere === "Altro") ||
+      !altezza ||
+      !peso ||
+      !diagnosi
+    ) {
+      return res
+        .status(HttpStatus.BAD_REQUEST.code)
+        .json(
+          new ResponseModel(
+            HttpStatus.BAD_REQUEST.code,
+            HttpStatus.BAD_REQUEST.status,
+            "Campi obbligatori mancanti o non validi"
+          )
         );
     }
 
+    // Verifica duplicato
     const [existsAccount] = await pool.query<RowDataPacket[]>(
-        "SELECT * FROM Pazienti WHERE email = ?",
-        [email]
+      "SELECT id FROM Pazienti WHERE email = ?",
+      [email]
     );
 
-    if(existsAccount.length > 0){
-        return res.status(HttpStatus.CONFLICT.code).json(
-            new ResponseModel(HttpStatus.CONFLICT.code, HttpStatus.CONFLICT.status, 'Paziente Exsist')
+    if (existsAccount.length > 0) {
+      return res
+        .status(HttpStatus.CONFLICT.code)
+        .json(
+          new ResponseModel(
+            HttpStatus.CONFLICT.code,
+            HttpStatus.CONFLICT.status,
+            "Paziente già registrato"
+          )
         );
     }
-    
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const createPaziente = await pool.query(
-        `INSERT INTO Pazienti (nome, cognome, email, password, data_nascita, genere, altezza, peso, diagnosi) 
-        VALUE(?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [nome, cognome, email, hashedPassword, data_nascita, genere, altezza, peso, diagnosi]
+
+    await pool.query(
+      `INSERT INTO Pazienti (nome, cognome, email, password, data_nascita, genere, altezza, peso, diagnosi)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nome, cognome, email, hashedPassword, data_nascita, genere, altezza, peso, diagnosi]
     );
 
-    res.status(HttpStatus.CREATED.code).json(
-        new ResponseModel(HttpStatus.CREATED.code, HttpStatus.CREATED.status, 'Account created successfully')
-    );
-
+    return res
+      .status(HttpStatus.CREATED.code)
+      .json(
+        new ResponseModel(
+          HttpStatus.CREATED.code,
+          HttpStatus.CREATED.status,
+          "Account creato con successo"
+        )
+      );
   } catch (err: any) {
-    res.status(HttpStatus.INTERNAL_SERVER_ERROR.code).json(
-      new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR.code, HttpStatus.INTERNAL_SERVER_ERROR.status, err.message)
-    );
+    return res
+      .status(HttpStatus.INTERNAL_SERVER_ERROR.code)
+      .json(
+        new ResponseModel(
+          HttpStatus.INTERNAL_SERVER_ERROR.code,
+          HttpStatus.INTERNAL_SERVER_ERROR.status,
+          err.message
+        )
+      );
   }
 }
 
+/**
+ * 🔹 LOGIN - Autentica il paziente
+ */
 export async function login(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
 
-    if( !email || !password ){
-        return res.status(HttpStatus.BAD_REQUEST.code).json(
-            new ResponseModel(HttpStatus.BAD_REQUEST.code, HttpStatus.BAD_REQUEST.status, 'Bad Request')
+    if (!email || !password) {
+      return res
+        .status(HttpStatus.BAD_REQUEST.code)
+        .json(
+          new ResponseModel(
+            HttpStatus.BAD_REQUEST.code,
+            HttpStatus.BAD_REQUEST.status,
+            "Email e password sono obbligatorie"
+          )
         );
     }
 
-    
-    const [ data ] = await pool.query<RowDataPacket[]>(
-        "SELECT * FROM Pazienti WHERE email = ?",
-        [email]
+    const [data] = await pool.query<RowDataPacket[]>(
+      "SELECT * FROM Pazienti WHERE email = ?",
+      [email]
     );
-    
-    if(data.length != 1){
-        return res.status(HttpStatus.UNAUTHORIZED.code).json(
-            new ResponseModel(HttpStatus.UNAUTHORIZED.code, HttpStatus.UNAUTHORIZED.status, `Credenzials Not Valid`)
-        );
-    }
-    
-    const user = data[0];
-    
-    const isValidPassowrd = await  bcrypt.compare(password, user.password);
-    
-    if(!isValidPassowrd){
-        return res.status(HttpStatus.UNAUTHORIZED.code).json(
-            new ResponseModel(HttpStatus.UNAUTHORIZED.code, HttpStatus.UNAUTHORIZED.status, 'Credenzials Not Valid')
+
+    if (data.length !== 1) {
+      return res
+        .status(HttpStatus.UNAUTHORIZED.code)
+        .json(
+          new ResponseModel(
+            HttpStatus.UNAUTHORIZED.code,
+            HttpStatus.UNAUTHORIZED.status,
+            "Credenziali non valide"
+          )
         );
     }
 
-    await pool.query(
-        `UPDATE refresh_tokens SET revoked = 1 WHERE id_user = ? AND user_type = 'P'`,
-        [user.id]
-    )
-    
-    const payload = {
-        id: user.id
+    const user = data[0];
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res
+        .status(HttpStatus.UNAUTHORIZED.code)
+        .json(
+          new ResponseModel(
+            HttpStatus.UNAUTHORIZED.code,
+            HttpStatus.UNAUTHORIZED.status,
+            "Credenziali non valide"
+          )
+        );
     }
-    
+
+    // Revoca vecchi token
+    await pool.query(
+      `UPDATE refresh_tokens SET revoked = 1 WHERE id_user = ? AND user_type = 'P'`,
+      [user.id]
+    );
+
+    // Genera nuovi token
+    const payload = { id: user.id };
     const accessToken = signAccess(payload);
     const refreshToken = signRefresh(payload);
-    
-    await pool.query<RowDataPacket[]>(
-        "INSERT INTO refresh_tokens(token_hash, id_user, user_type, expires_at) VALUES (?, ?, ?, ?)",
-        [
-            refreshToken,
-            user.id,
-            'P',
-            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        ]
-    );
-    
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,       
-      secure: true,         
-      sameSite: "strict",   
-      path: "/auth/" 
-    });
-    
-    res.status(HttpStatus.OK.code).json(
-        new ResponseModel(HttpStatus.OK.code, HttpStatus.OK.status, 'Login successful', {accessToken: accessToken})
+
+    // Usa UUID per identificare il refresh token nel DB (veloce, indicizzabile)
+    const refreshKey = uuidv4();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await pool.query(
+      `INSERT INTO refresh_tokens (token_hash, id_user, user_type, expires_at)
+       VALUES (?, ?, 'P', ?)`,
+      [refreshKey, user.id, expiresAt]
     );
 
+    // Imposta cookie sicuro con refresh token (stringa + chiave DB)
+    res.cookie("refreshToken", refreshKey, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      path: "/auth/",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 giorni
+    });
+
+    // Ritorna access token + refresh token JWT separato
+    return res
+      .status(HttpStatus.OK.code)
+      .json(
+        new ResponseModel(HttpStatus.OK.code, HttpStatus.OK.status, "Login effettuato con successo", {
+          accessToken,
+          refreshToken,
+        })
+      );
   } catch (err: any) {
-    res.status(HttpStatus.INTERNAL_SERVER_ERROR.code).json(
-      new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR.code, HttpStatus.INTERNAL_SERVER_ERROR.status, err.message)
-    );
+    console.error("Errore login paziente:", err);
+    return res
+      .status(HttpStatus.INTERNAL_SERVER_ERROR.code)
+      .json(
+        new ResponseModel(
+          HttpStatus.INTERNAL_SERVER_ERROR.code,
+          HttpStatus.INTERNAL_SERVER_ERROR.status,
+          err.message
+        )
+      );
   }
 }
 
+/**
+ * 🔹 REFRESH TOKEN - Rigenera access token
+ */
 export async function refreshToken(req: Request, res: Response) {
   try {
     const { refreshToken } = req.cookies;
-    
+
     if (!refreshToken) {
-      return res.status(HttpStatus.BAD_REQUEST.code).json(
-        new ResponseModel(HttpStatus.BAD_REQUEST.code, HttpStatus.BAD_REQUEST.status, 'refreshToken is required')
-      );
-    }
-
-    const [ data ] = await pool.query<RowDataPacket[]>(
-        `SELECT * from refresh_tokens Where token_hash = ?`,
-        [refreshToken]
-    )
-
-    if (data.length == 0){
-        return res.status(HttpStatus.UNAUTHORIZED.code).json(
-            new ResponseModel(HttpStatus.UNAUTHORIZED.code, HttpStatus.UNAUTHORIZED.status, 'Refresh token is revoked')
+      return res
+        .status(HttpStatus.BAD_REQUEST.code)
+        .json(
+          new ResponseModel(
+            HttpStatus.BAD_REQUEST.code,
+            HttpStatus.BAD_REQUEST.status,
+            "refreshToken mancante"
+          )
         );
     }
 
-    const token = data[0];
+    const [rows] = await pool.query<RowDataPacket[]>(
+      "SELECT * FROM refresh_tokens WHERE token_hash = ? AND revoked = 0",
+      [refreshToken]
+    );
 
-    const decoded = verifyRefresh(token.token_hash)
-
-    if (!decoded || !(decoded as any).exp){
-      return res.status(HttpStatus.UNAUTHORIZED.code).json(
-        new ResponseModel(HttpStatus.UNAUTHORIZED.code, HttpStatus.UNAUTHORIZED.status, 'Refresh token is expires')
-      );
-    }
-
-    if (token.expiresAt && new Date(token.expiresAt) < new Date() && (decoded as any).exp < Math.floor(Date.now() / 1000)) {
-        return res.status(HttpStatus.UNAUTHORIZED.code).json(
-            new ResponseModel(HttpStatus.UNAUTHORIZED.code, HttpStatus.UNAUTHORIZED.status, 'Refresh token is expires')
+    if (rows.length === 0) {
+      return res
+        .status(HttpStatus.UNAUTHORIZED.code)
+        .json(
+          new ResponseModel(
+            HttpStatus.UNAUTHORIZED.code,
+            HttpStatus.UNAUTHORIZED.status,
+            "Refresh token non valido"
+          )
         );
     }
 
-    if(token.user_type != 'P'){
-        return res.status(HttpStatus.CONFLICT.code).json(
-            new ResponseModel(HttpStatus.CONFLICT.code, HttpStatus.CONFLICT.status, 'Incoerenza tra token e user')
+    const tokenRow = rows[0];
+
+    if (new Date(tokenRow.expires_at) < new Date()) {
+      await pool.query("UPDATE refresh_tokens SET revoked = 1 WHERE id = ?", [tokenRow.id]);
+      return res
+        .status(HttpStatus.UNAUTHORIZED.code)
+        .json(
+          new ResponseModel(
+            HttpStatus.UNAUTHORIZED.code,
+            HttpStatus.UNAUTHORIZED.status,
+            "Refresh token scaduto"
+          )
         );
     }
 
-    const payload = { 
-      id: token.id_user
-    };
+    // Decodifica JWT (solo per validazione firma, non DB)
+    const decoded = verifyRefresh(req.cookies.refreshToken);
+    if (!decoded) {
+      return res
+        .status(HttpStatus.UNAUTHORIZED.code)
+        .json(
+          new ResponseModel(
+            HttpStatus.UNAUTHORIZED.code,
+            HttpStatus.UNAUTHORIZED.status,
+            "Token JWT non valido"
+          )
+        );
+    }
+
     // Genera nuovi token
+    const payload = { id: tokenRow.id_user };
     const newAccessToken = signAccess(payload);
     const newRefreshToken = signRefresh(payload);
+    const newRefreshKey = uuidv4();
+    const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    await pool.query<RowDataPacket[]>(
-        "INSERT INTO refresh_tokens(token_hash, id_user, user_type, expires_at) VALUES (?, ?, ?, ?)",
-        [
-            newRefreshToken,
-            token.id_user,
-            'P',
-            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        ]
+    await pool.query(
+      "INSERT INTO refresh_tokens (token_hash, id_user, user_type, expires_at) VALUES (?, ?, 'P', ?)",
+      [newRefreshKey, tokenRow.id_user, newExpiresAt]
     );
-    
-    await pool.query<RowDataPacket[]>(
-        "UPDATE refresh_tokens SET revoked = 1 WHERE id = ?",
-        [
-            token.id
-        ]
-    );
-    
-    res.cookie("refreshToken", newRefreshToken, {
-      httpOnly: true,       
+
+    await pool.query("UPDATE refresh_tokens SET revoked = 1 WHERE id = ?", [tokenRow.id]);
+
+    res.cookie("refreshToken", newRefreshKey, {
+      httpOnly: true,
       secure: true,
-      sameSite: "strict",   
-      path: "/auth/"
+      sameSite: "strict",
+      path: "/auth/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.status(HttpStatus.OK.code).json(
-      new ResponseModel(HttpStatus.OK.code, HttpStatus.OK.status, 'Token refreshed successfully', {accessToken: newAccessToken})
-    );
+    return res
+      .status(HttpStatus.OK.code)
+      .json(
+        new ResponseModel(
+          HttpStatus.OK.code,
+          HttpStatus.OK.status,
+          "Token rigenerato con successo",
+          { accessToken: newAccessToken, refreshToken: newRefreshToken }
+        )
+      );
   } catch (err: any) {
-    res.status(HttpStatus.INTERNAL_SERVER_ERROR.code).json(
-      new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR.code, HttpStatus.INTERNAL_SERVER_ERROR.status, err.message)
-    );
+    console.error("Errore refresh token:", err);
+    return res
+      .status(HttpStatus.INTERNAL_SERVER_ERROR.code)
+      .json(
+        new ResponseModel(
+          HttpStatus.INTERNAL_SERVER_ERROR.code,
+          HttpStatus.INTERNAL_SERVER_ERROR.status,
+          err.message
+        )
+      );
   }
 }
 
+/**
+ * 🔹 LOGOUT - Revoca refresh token e cancella cookie
+ */
 export async function logout(req: Request, res: Response) {
   try {
     const { refreshToken } = req.cookies;
 
     if (!refreshToken) {
-      return res.status(HttpStatus.BAD_REQUEST.code).json(
-        new ResponseModel(HttpStatus.BAD_REQUEST.code, HttpStatus.BAD_REQUEST.status, 'refreshToken is required')
-      );
+      return res
+        .status(HttpStatus.BAD_REQUEST.code)
+        .json(
+          new ResponseModel(
+            HttpStatus.BAD_REQUEST.code,
+            HttpStatus.BAD_REQUEST.status,
+            "refreshToken mancante"
+          )
+        );
     }
 
-    await pool.query<RowDataPacket[]>(
-      "UPDATE refresh_tokens SET revoked = 1 WHERE token_hash = ?",
-      [
-        refreshToken
-      ]
-    );
+    await pool.query("UPDATE refresh_tokens SET revoked = 1 WHERE token_hash = ?", [refreshToken]);
 
-    res.clearCookie('refreshToken', {
+    res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: true, 
-      sameSite: 'strict',
-      path: "/auth/"
+      secure: true,
+      sameSite: "strict",
+      path: "/auth/",
     });
 
-    res.status(HttpStatus.OK.code).json(
-      new ResponseModel(HttpStatus.OK.code, HttpStatus.OK.status, 'Logged out successfully')
-    );
+    return res
+      .status(HttpStatus.OK.code)
+      .json(
+        new ResponseModel(
+          HttpStatus.OK.code,
+          HttpStatus.OK.status,
+          "Logout effettuato con successo"
+        )
+      );
   } catch (err: any) {
-    res.status(HttpStatus.BAD_REQUEST.code).json(
-      new ResponseModel(HttpStatus.BAD_REQUEST.code, HttpStatus.BAD_REQUEST.status, err.message)
-    );
+    return res
+      .status(HttpStatus.INTERNAL_SERVER_ERROR.code)
+      .json(
+        new ResponseModel(
+          HttpStatus.INTERNAL_SERVER_ERROR.code,
+          HttpStatus.INTERNAL_SERVER_ERROR.status,
+          err.message
+        )
+      );
   }
 }

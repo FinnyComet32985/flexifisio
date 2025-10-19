@@ -6,7 +6,7 @@ const ACCESS_SECRET = (process.env.ACCESS_TOKEN_SECRETE as any);
 const REFRESH_SECRET = (process.env.REFRESH_TOKEN_SECRETE as any);
 
 export function signAccess(payload: object): string {
-  return jwt.sign(payload, ACCESS_SECRET, { expiresIn: (process.env.ACCESS_TOKEN_EXPIRES || "15m" as any) });
+  return jwt.sign(payload, ACCESS_SECRET, { expiresIn: (process.env.ACCESS_TOKEN_EXPIRES || "1d" as any) });
 }
 
 export function signRefresh(payload: object): string {
