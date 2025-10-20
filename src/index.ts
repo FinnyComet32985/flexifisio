@@ -9,6 +9,16 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
+app.get("/", (req, res) => {
+    res.status(200).json({
+        message: "Benvenuto nella API di Fisioterapia! Usa i percorsi /fisioterapista e /pazienti per accedere alle risorse.",
+        endpoints: {
+            fisioterapista: "/fisioterapista",
+            pazienti: "/pazienti"
+        }
+    });
+});
+
 app.use("/fisioterapista", fisioterapistaRouter);
 app.use("/pazienti", pazientiRouter)
 
