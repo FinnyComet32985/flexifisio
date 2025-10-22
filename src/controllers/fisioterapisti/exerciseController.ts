@@ -20,7 +20,7 @@ export const handleCreateExercise = async (req: Request, res: Response) => {
         !descrizione_svolgimento ||
         !consigli_svolgimento
     ) {
-        res.status(400).json({ message: "Parametri mancanti" }).send();
+        res.status(400).json({ message: "Parametri mancanti" });
     } else {
         const [result] = await pool.query<ResultSetHeader>(
             "INSERT INTO Esercizi (nome, descrizione, descrizione_svolgimento, consigli_svolgimento, video, fisioterapista_id) VALUES (?,?,?,?,?,?);",
@@ -35,11 +35,11 @@ export const handleCreateExercise = async (req: Request, res: Response) => {
         );
 
         if (result.affectedRows === 0) {
-            res.status(500)
-                .json({ message: "Errore durante la registrazione" })
-                .send();
+            res.status(500).json({
+                message: "Errore durante la registrazione",
+            });
         } else {
-            res.status(200).json({ message: "Allenamento creato" }).send();
+            res.status(200).json({ message: "Allenamento creato" });
         }
     }
 };
@@ -55,11 +55,9 @@ export const handleGetExercises = async (req: Request, res: Response) => {
         );
 
         if (rows.length === 0) {
-            res.status(404)
-                .json({ message: "Nessun allenamento trovato" })
-                .send();
+            res.status(404).json({ message: "Nessun allenamento trovato" });
         } else {
-            res.status(200).json(rows).send();
+            res.status(200).json(rows);
         }
     } else {
         const [rows] = await pool.query<RowDataPacket[]>(
@@ -68,11 +66,9 @@ export const handleGetExercises = async (req: Request, res: Response) => {
         );
 
         if (rows.length === 0) {
-            res.status(404)
-                .json({ message: "Nessun allenamento trovato" })
-                .send();
+            res.status(404).json({ message: "Nessun allenamento trovato" });
         } else {
-            res.status(200).json(rows).send();
+            res.status(200).json(rows);
         }
     }
 };
@@ -82,7 +78,7 @@ export const handleDeleteExercises = async (req: Request, res: Response) => {
     const id = req.params.id;
 
     if (!id) {
-        res.status(400).json({ message: "Parametri mancanti" }).send();
+        res.status(400).json({ message: "Parametri mancanti" });
     } else {
         const [result] = await pool.query<ResultSetHeader>(
             "DELETE FROM Esercizi WHERE fisioterapista_id = ? AND id = ?;",
@@ -94,7 +90,7 @@ export const handleDeleteExercises = async (req: Request, res: Response) => {
                 message: "Errore durante la cancellazione",
             });
         } else {
-            res.status(200).json({ message: "Allenamento cancellato" }).send();
+            res.status(200).json({ message: "Allenamento cancellato" });
         }
     }
 };

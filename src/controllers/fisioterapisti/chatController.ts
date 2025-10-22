@@ -12,9 +12,7 @@ export const handleGetChat = async (req: Request, res: Response) => {
             [fisioterapistaId]
         );
         if (trattamenti.length === 0) {
-            res.status(404)
-                .json({ message: "Nessun trattamento trovato" })
-                .send();
+            res.status(404).json({ message: "Nessun trattamento trovato" });
         } else {
             const trattamentoIds = trattamenti.map(
                 (trattamento) => trattamento.trattamento_id
@@ -24,11 +22,9 @@ export const handleGetChat = async (req: Request, res: Response) => {
                 [trattamentoIds]
             );
             if (rows.length === 0) {
-                res.status(404)
-                    .json({ message: "Nessun trattamento trovato" })
-                    .send();
+                res.status(404).json({ message: "Nessun trattamento trovato" });
             } else {
-                res.status(200).json(rows).send();
+                res.status(200).json(rows);
             }
         }
     } else {
@@ -38,9 +34,7 @@ export const handleGetChat = async (req: Request, res: Response) => {
         );
 
         if (trattamento.length === 0) {
-            res.status(404)
-                .json({ message: "Nessun trattamento trovato" })
-                .send();
+            res.status(404).json({ message: "Nessun trattamento trovato" });
         } else {
             const trattamentoId = trattamento[0].id;
             const [rows] = await pool.query<RowDataPacket[]>(
@@ -48,11 +42,9 @@ export const handleGetChat = async (req: Request, res: Response) => {
                 [trattamentoId]
             );
             if (rows.length === 0) {
-                res.status(404)
-                    .json({ message: "Nessun messaggio trovato" })
-                    .send();
+                res.status(404).json({ message: "Nessun messaggio trovato" });
             } else {
-                res.status(200).json(rows).send();
+                res.status(200).json(rows);
             }
         }
     }
@@ -63,7 +55,7 @@ export const handleSendMessage = async (req: Request, res: Response) => {
     const paziente_id = req.params.id;
     const testo = req.body.testo;
     if (!testo) {
-        res.status(400).json({ message: "Parametri mancanti" }).send();
+        res.status(400).json({ message: "Parametri mancanti" });
     } else {
         const [trattamento] = await pool.query<RowDataPacket[]>(
             "SELECT id FROM trattamenti WHERE fisioterapista_id = ? AND paziente_id = ? AND in_corso = 1;",
@@ -71,20 +63,16 @@ export const handleSendMessage = async (req: Request, res: Response) => {
         );
 
         if (trattamento.length === 0) {
-            res.status(404)
-                .json({ message: "Nessun trattamento trovato" })
-                .send();
+            res.status(404).json({ message: "Nessun trattamento trovato" });
         } else {
             const [result] = await pool.query<ResultSetHeader>(
                 "INSERT INTO messaggi (trattamento_id, testo, mittente, data_invio) VALUES (?,?,?,?);",
                 [trattamento[0].id, testo, "fisioterapista", new Date()]
             );
             if (result.affectedRows === 0) {
-                res.status(500)
-                    .json({ message: "Errore durante l'invio" })
-                    .send();
+                res.status(500).json({ message: "Errore durante l'invio" });
             } else {
-                res.status(200).json({ message: "Messaggio inviato" }).send();
+                res.status(200).json({ message: "Messaggio inviato" });
             }
         }
     }

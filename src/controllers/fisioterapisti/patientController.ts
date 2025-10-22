@@ -13,9 +13,9 @@ export const handleGetPatient = async (req: Request, res: Response) => {
             [fisioterapistaId]
         );
         if (rows.length === 0) {
-            res.status(404).json({ message: "Nessun paziente trovato" }).send();
+            res.status(404).json({ message: "Nessun paziente trovato" });
         } else {
-            res.status(200).json(rows).send();
+            res.status(200).json(rows);
         }
     } else {
         const [rows_trattamenti] = await pool.query<RowDataPacket[]>(
@@ -23,18 +23,16 @@ export const handleGetPatient = async (req: Request, res: Response) => {
             [pazienteId, fisioterapistaId]
         );
         if (rows_trattamenti.length === 0) {
-            res.status(404).json({ message: "Nessun paziente trovato" }).send();
+            res.status(404).json({ message: "Nessun paziente trovato" });
         } else {
             if (rows_trattamenti[0].in_corso === 0) {
-                res.status(404)
-                    .json({ message: "Il trattamento è terminato" })
-                    .send();
+                res.status(404).json({ message: "Il trattamento è terminato" });
             } else {
                 const [rows] = await pool.query<RowDataPacket[]>(
                     "SELECT Pazienti.id, Pazienti.nome, Pazienti.cognome, Pazienti.data_nascita, Pazienti.genere, Pazienti.altezza, Pazienti.peso, Pazienti.diagnosi FROM Trattamenti JOIN Pazienti ON Trattamenti.paziente_id = Pazienti.id WHERE Trattamenti.fisioterapista_id = ? AND Pazienti.id = ?;",
                     [fisioterapistaId, pazienteId]
                 );
-                res.status(200).json(rows).send();
+                res.status(200).json(rows);
             }
         }
     }
@@ -51,16 +49,14 @@ export const handleEndTreatment = async (req: Request, res: Response) => {
         );
 
         if (result.affectedRows === 0) {
-            res.status(404)
-                .json({ message: "Nessun trattamento trovato" })
-                .send();
+            res.status(404).json({ message: "Nessun trattamento trovato" });
         } else {
-            res.status(200).json({ message: "Trattamento terminato" }).send();
+            res.status(200).json({ message: "Trattamento terminato" });
         }
     } catch (error) {
-        res.status(500)
-            .json({ message: "Errore nell'aggiornamento del trattamento" })
-            .send();
+        res.status(500).json({
+            message: "Errore nell'aggiornamento del trattamento",
+        });
     }
 };
 
@@ -92,9 +88,9 @@ export const handleNewPatient = async (req: Request, res: Response) => {
             ]
         );
         if (result.affectedRows === 0) {
-            res.status(500)
-                .json({ message: "Errore durante la registrazione" })
-                .send();
+            res.status(500).json({
+                message: "Errore durante la registrazione",
+            });
         } else {
             // trovo l'id del paziente appena creato
             const [newPaziente] = await pool.query<RowDataPacket[]>(
@@ -107,11 +103,11 @@ export const handleNewPatient = async (req: Request, res: Response) => {
                 [fisioterapistaId, newPaziente[0].id]
             );
             if (trattamento.affectedRows === 0) {
-                res.status(500)
-                    .json({ message: "Errore durante la registrazione" })
-                    .send();
+                res.status(500).json({
+                    message: "Errore durante la registrazione",
+                });
             } else {
-                res.status(200).json({ message: "Utente registrato" }).send();
+                res.status(200).json({ message: "Utente registrato" });
             }
         }
     } else {
@@ -128,11 +124,11 @@ export const handleNewPatient = async (req: Request, res: Response) => {
                 [altezza, peso, diagnosi, rows[0].id]
             );
             if (update.affectedRows === 0) {
-                res.status(500)
-                    .json({ message: "Errore durante la registrazione" })
-                    .send();
+                res.status(500).json({
+                    message: "Errore durante la registrazione",
+                });
             } else {
-                res.status(200).json({ message: "Utente registrato" }).send();
+                res.status(200).json({ message: "Utente registrato" });
             }
         } catch (error) {
             const err = error as Error;

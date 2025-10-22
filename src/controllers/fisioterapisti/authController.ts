@@ -20,10 +20,9 @@ if (!accessTokenSecret) {
 export const handleRegister = async (req: Request, res: Response) => {
     const { nome, cognome, email, password } = req.body;
     if (!nome || !cognome || !email || !password) {
-        res.sendStatus(400).json({
+        res.status(400).json({
             message: "nome, cognome, email e password sono obbligatori",
         });
-        res.send();
     }
 
     const [rows] = await pool.query<RowDataPacket[]>(
@@ -32,8 +31,7 @@ export const handleRegister = async (req: Request, res: Response) => {
     );
 
     if (rows.length > 0) {
-        res.sendStatus(409).json({ message: "Email già registrata" });
-        res.send();
+        res.status(409).json({ message: "Email già registrata" });
     }
 
     try {
@@ -55,11 +53,9 @@ export const handleRegister = async (req: Request, res: Response) => {
 export const handleLogin = async (req: Request, res: Response) => {
     const { email, password } = req.body;
     if (!email || !password) {
-        res.status(400)
-            .json({
-                message: "Email e password sono obbligatori",
-            })
-            .send();
+        res.status(400).json({
+            message: "Email e password sono obbligatori",
+        });
     } else {
         const [rows] = await pool.query<RowDataPacket[]>(
             "SELECT * FROM Fisioterapisti WHERE email = ?",
@@ -67,7 +63,7 @@ export const handleLogin = async (req: Request, res: Response) => {
         );
 
         if (rows.length === 0) {
-            res.status(401).json({ message: "Utente non trovato" }).send();
+            res.status(401).json({ message: "Utente non trovato" });
         } else {
             const match = await bcrypt.compare(password, rows[0].password);
             if (match) {
@@ -96,9 +92,9 @@ export const handleLogin = async (req: Request, res: Response) => {
                     secure: true,
                     maxAge: 24 * 60 * 60 * 1000,
                 });
-                res.status(200).json({ accessToken }).send();
+                res.status(200).json({ accessToken });
             } else {
-                res.status(401).json({ message: "Password errata" }).send();
+                res.status(401).json({ message: "Password errata" });
             }
         }
     }
@@ -132,7 +128,7 @@ export const handleRefreshToken = async (req: Request, res: Response) => {
                     accessTokenSecret,
                     { expiresIn: "15m" }
                 );
-                res.json({ accessToken }).send();
+                res.json({ accessToken });
             }
         );
     }

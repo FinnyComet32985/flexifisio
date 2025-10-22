@@ -11,8 +11,8 @@ export const handleGetProfile = async (req: Request, res: Response) => {
     );
 
     if (rows.length === 0) {
-        res.status(404).json({ message: "Fisioterapista non trovato" }).send();
+        res.status(404).json({ message: "Fisioterapista non trovato" });
     } else {
-        res.status(200).json(rows[0]).send();
+        res.status(200).json(rows[0]);
     }
 };

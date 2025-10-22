@@ -8,7 +8,7 @@ export const handleCreateAppointment = async (req: Request, res: Response) => {
     const paziente_id = req.params.id;
     const { data_appuntamento, ora_appuntamento } = req.body;
     if (!data_appuntamento || !ora_appuntamento) {
-        res.status(400).json({ message: "Parametri mancanti" }).send();
+        res.status(400).json({ message: "Parametri mancanti" });
     } else {
         const [trattamenti] = await pool.query<RowDataPacket[]>(
             "SELECT id FROM trattamenti WHERE fisioterapista_id = ? AND paziente_id = ? AND in_corso = 1;",
@@ -16,9 +16,7 @@ export const handleCreateAppointment = async (req: Request, res: Response) => {
         );
 
         if (trattamenti.length === 0) {
-            res.status(404)
-                .json({ message: "Nessun trattamento trovato" })
-                .send();
+            res.status(404).json({ message: "Nessun trattamento trovato" });
         } else {
             try {
                 const [result] = await pool.query<ResultSetHeader>(
@@ -26,16 +24,14 @@ export const handleCreateAppointment = async (req: Request, res: Response) => {
                     [data_appuntamento, ora_appuntamento, trattamenti[0].id]
                 );
                 if (result.affectedRows === 0) {
-                    res.status(500)
-                        .json({
-                            message:
-                                "Errore durante la creazione dell'appuntamento",
-                        })
-                        .send();
+                    res.status(500).json({
+                        message:
+                            "Errore durante la creazione dell'appuntamento",
+                    });
                 } else {
-                    res.status(200)
-                        .json({ message: "Appuntamento creato con successo" })
-                        .send();
+                    res.status(200).json({
+                        message: "Appuntamento creato con successo",
+                    });
                 }
             } catch (error) {
                 const err = error as Error;
@@ -53,7 +49,7 @@ export const handleUpdateAppointment = async (req: Request, res: Response) => {
     const appuntamento_id = req.params.id;
     const { data_appuntamento, ora_appuntamento } = req.body;
     if (!data_appuntamento || !ora_appuntamento) {
-        res.status(400).json({ message: "Parametri mancanti" }).send();
+        res.status(400).json({ message: "Parametri mancanti" });
     } else {
         const [result] = await pool.query<RowDataPacket[]>(
             "SELECT trattamenti.fisioterapista_id, trattamenti.in_corso FROM trattamenti join appuntamenti on trattamenti.id = appuntamenti.trattamento_id WHERE appuntamenti.id=?;",
@@ -76,18 +72,13 @@ export const handleUpdateAppointment = async (req: Request, res: Response) => {
                 );
 
                 if (result.affectedRows === 0) {
-                    res.status(500)
-                        .json({
-                            message:
-                                "Errore durante la modifica dell'appuntamento",
-                        })
-                        .send();
+                    res.status(500).json({
+                        message: "Errore durante la modifica dell'appuntamento",
+                    });
                 } else {
-                    res.status(200)
-                        .json({
-                            message: "Appuntamento modificato con successo",
-                        })
-                        .send();
+                    res.status(200).json({
+                        message: "Appuntamento modificato con successo",
+                    });
                 }
             } catch (error) {
                 const err = error as Error;
@@ -122,13 +113,13 @@ export const handleDeleteAppointments = async (req: Request, res: Response) => {
             [appuntamento_id]
         );
         if (del.affectedRows === 0) {
-            res.status(500)
-                .json({ message: "Errore durante la cancellazione" })
-                .send();
+            res.status(500).json({
+                message: "Errore durante la cancellazione",
+            });
         } else {
-            res.status(200)
-                .json({ message: "Appuntamento cancellato con successo" })
-                .send();
+            res.status(200).json({
+                message: "Appuntamento cancellato con successo",
+            });
         }
     }
 };
@@ -143,9 +134,7 @@ export const handleGetAppointments = async (req: Request, res: Response) => {
             [fisioterapistaId]
         );
         if (trattamenti.length === 0) {
-            res.status(404)
-                .json({ message: "Nessun trattamento trovato" })
-                .send();
+            res.status(404).json({ message: "Nessun trattamento trovato" });
         } else {
             const trattamentoIds = trattamenti.map(
                 (trattamento) => trattamento.id
@@ -155,11 +144,11 @@ export const handleGetAppointments = async (req: Request, res: Response) => {
                 [trattamentoIds]
             );
             if (result.length === 0) {
-                res.status(404)
-                    .json({ message: "Nessun appuntamento trovato" })
-                    .send();
+                res.status(404).json({
+                    message: "Nessun appuntamento trovato",
+                });
             } else {
-                res.status(200).json(result).send();
+                res.status(200).json(result);
             }
         }
     } else {
@@ -168,9 +157,7 @@ export const handleGetAppointments = async (req: Request, res: Response) => {
             [paziente_id]
         );
         if (result.length === 0) {
-            res.status(404)
-                .json({ message: "Nessun trattamento trovato" })
-                .send();
+            res.status(404).json({ message: "Nessun trattamento trovato" });
         } else if (
             result[0].in_corso === 0 ||
             result[0].fisioterapista_id !== fisioterapistaId
@@ -185,11 +172,11 @@ export const handleGetAppointments = async (req: Request, res: Response) => {
                 [result[0].id]
             );
             if (appuntamenti.length === 0) {
-                res.status(404)
-                    .json({ message: "Nessun appuntamento trovato" })
-                    .send();
+                res.status(404).json({
+                    message: "Nessun appuntamento trovato",
+                });
             } else {
-                res.status(200).json(appuntamenti).send();
+                res.status(200).json(appuntamenti);
             }
         }
     }
