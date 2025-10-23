@@ -281,6 +281,7 @@ CREATE TABLE Esercizi (
     descrizione TEXT NOT NULL,
     descrizione_svolgimento TEXT NOT NULL,
     consigli_svolgimento TEXT NOT NULL,
+    immagine VARCHAR(255),
     video VARCHAR(255),
     fisioterapista_id INT NOT NULL,
     FOREIGN KEY (fisioterapista_id) REFERENCES Fisioterapisti(id)

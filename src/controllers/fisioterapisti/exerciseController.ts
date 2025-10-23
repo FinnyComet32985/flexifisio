@@ -50,7 +50,7 @@ export const handleGetExercises = async (req: Request, res: Response) => {
 
     if (!id) {
         const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT id, nome, descrizione, descrizione_svolgimento, consigli_svolgimento, video  FROM Esercizi WHERE fisioterapista_id = ?;",
+            "SELECT id, nome, descrizione, descrizione_svolgimento, consigli_svolgimento, immagine, video  FROM Esercizi WHERE fisioterapista_id = ?;",
             [fisioterapistaId]
         );
 
@@ -61,7 +61,7 @@ export const handleGetExercises = async (req: Request, res: Response) => {
         }
     } else {
         const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT id, nome, descrizione, descrizione_svolgimento, consigli_svolgimento, video FROM Esercizi WHERE fisioterapista_id = ? AND id = ?;",
+            "SELECT id, nome, descrizione, descrizione_svolgimento, consigli_svolgimento, immagine, video FROM Esercizi WHERE fisioterapista_id = ? AND id = ?;",
             [fisioterapistaId, id]
         );
 
