@@ -89,7 +89,7 @@ export const handleLogin = async (req: Request, res: Response) => {
                 res.cookie("jwt", refreshToken, {
                     httpOnly: true,
                     sameSite: false,
-                    secure: true,
+                    secure: false,
                     maxAge: 24 * 60 * 60 * 1000,
                 });
                 res.status(200).json({ accessToken });
@@ -149,7 +149,7 @@ export const handleLogout = async (req: Request, res: Response) => {
             res.clearCookie("jwt", {
                 httpOnly: true,
                 sameSite: false,
-                secure: true,
+                secure: false,
             });
             res.sendStatus(204);
         }
