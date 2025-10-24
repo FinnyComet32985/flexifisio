@@ -152,7 +152,7 @@ export const handleAddExerciseToTrainingCard = async (
 ) => {
     const fisioterapistaId = req.body.jwtPayload.id;
     const scheda_id = parseInt(req.params.id);
-    const { esercizio_id, ripetizioni } = req.body;
+    const { esercizio_id, ripetizioni, serie } = req.body;
 
     const [result] = await pool.query<RowDataPacket[]>(
         "SELECT trattamenti.id as trattamenti_id, trattamenti.fisioterapista_id as fisioterapista_id, trattamenti.in_corso as in_corso, schedeallenamento.id as scheda_id FROM trattamenti JOIN schedeallenamento ON trattamenti.id=schedeallenamento.trattamento_id;",
@@ -189,8 +189,8 @@ export const handleAddExerciseToTrainingCard = async (
                     });
                 } else {
                     const [addEsercizio] = await pool.query<ResultSetHeader>(
-                        "INSERT INTO schedaesercizi (scheda_id, esercizio_id, ripetizioni) VALUES (?, ?, ?);",
-                        [scheda_id, esercizio_id, ripetizioni]
+                        "INSERT INTO schedaesercizi (scheda_id, esercizio_id, ripetizioni, serie) VALUES (?, ?, ?);",
+                        [scheda_id, esercizio_id, ripetizioni, serie]
                     );
                     if (addEsercizio.affectedRows === 0) {
                         res.status(404).json({
