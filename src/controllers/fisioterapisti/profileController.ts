@@ -24,5 +24,22 @@ export const handleUpdateProfile = async (req: Request, res: Response) => {
     if (!nome && !cognome && !email) {
         res.status(400).json({ message: "Parametri mancanti" });
     } else {
+        try {
+            const [result] = await pool.query<ResultSetHeader>(
+                "UPDATE fisioterapisti SET nome = ?, cognome = ?, email = ? WHERE id = ?;",
+                [nome, cognome, email, fisioterapistaId]
+            );
+
+            if (result.affectedRows === 0) {
+                res.status(500).json({ message: "Errore durante la modifica" });
+            } else {
+                res.status(200).json({ message: "Profilo modificato" });
+            }
+        } catch (error) {
+            const err = error as Error;
+            res.status(500).json({
+                message: "Errore durante la modifica. " + err.message,
+            });
+        }
     }
 };
