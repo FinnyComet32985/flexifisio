@@ -34,6 +34,11 @@ fisioterapistaRouter.post(
     authenticateJWT,
     patientController.handleNewPatient
 );
+fisioterapistaRouter.patch(
+    "/patient/:id",
+    authenticateJWT,
+    patientController.handleUpdatePatient
+);
 fisioterapistaRouter.delete(
     "/patient/:id",
     authenticateJWT,

@@ -147,3 +147,33 @@ export const handleNewPatient = async (req: Request, res: Response) => {
         }
     }
 };
+
+export const handleUpdatePatient = async (req: Request, res: Response) => {
+    const fisioterapistaId = req.body.jwtPayload.id;
+    const pazienteId = parseInt(req.params.id);
+    const { altezza, peso, diagnosi } = req.body;
+    if (altezza === undefined && peso === undefined && diagnosi === undefined) {
+        res.status(400).json({ message: "Parametri mancanti" });
+    } else {
+        const [rows_trattamenti] = await pool.query<RowDataPacket[]>(
+            "SELECT in_corso FROM Trattamenti WHERE paziente_id = ? AND fisioterapista_id = ?;",
+            [pazienteId, fisioterapistaId]
+        );
+
+        if (rows_trattamenti[0].in_corso === 0) {
+            res.status(404).json({ message: "Il trattamento è terminato" });
+        } else {
+            const [update] = await pool.query<ResultSetHeader>(
+                "UPDATE pazienti SET altezza = ?, peso = ?, diagnosi = ? WHERE id = ?;",
+                [altezza, peso, diagnosi, pazienteId]
+            );
+            if (update.affectedRows === 0) {
+                res.status(500).json({
+                    message: "Errore durante la modifica",
+                });
+            } else {
+                res.status(200).json({ message: "Paziente modificato" });
+            }
+        }
+    }
+};
