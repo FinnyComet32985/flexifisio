@@ -12,6 +12,7 @@ export const handleCreateExercise = async (req: Request, res: Response) => {
         descrizione_svolgimento,
         consigli_svolgimento,
         video,
+        immagine,
     } = req.body;
 
     if (
@@ -23,12 +24,13 @@ export const handleCreateExercise = async (req: Request, res: Response) => {
         res.status(400).json({ message: "Parametri mancanti" });
     } else {
         const [result] = await pool.query<ResultSetHeader>(
-            "INSERT INTO Esercizi (nome, descrizione, descrizione_svolgimento, consigli_svolgimento, video, fisioterapista_id) VALUES (?,?,?,?,?,?);",
+            "INSERT INTO Esercizi (nome, descrizione, descrizione_svolgimento, consigli_svolgimento, immagine, video, fisioterapista_id) VALUES (?,?,?,?,?,?,?);",
             [
                 nome, //? deve essere univoco per fisioterapista
                 descrizione,
                 descrizione_svolgimento,
                 consigli_svolgimento,
+                immagine,
                 video,
                 fisioterapistaId,
             ]
