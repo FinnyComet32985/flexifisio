@@ -223,7 +223,7 @@ export const handleGetExercisesFromTrainingCard = async (
         res.status(404).json({ message: "Nessun trattamento trovato" });
     } else {
         const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT esercizi.* FROM esercizi JOIN schedaesercizi ON esercizi.id=schedaesercizi.esercizio_id WHERE schedaesercizi.scheda_id=?;",
+            "SELECT esercizi.nome, esercizi.descrizione, esercizi.descrizione_svolgimento, esercizi.consigli_svolgimento, esercizi.immagine, esercizi.video, schedaesercizi.ripetizioni, schedaesercizi.serie FROM esercizi JOIN schedaesercizi ON esercizi.id=schedaesercizi.esercizio_id WHERE schedaesercizi.scheda_id=?;",
             [scheda_id]
         );
         if (rows.length === 0) {

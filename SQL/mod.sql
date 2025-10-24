@@ -291,6 +291,8 @@ CREATE TABLE Esercizi (
 CREATE TABLE SchedaEsercizi (
     scheda_id INT NOT NULL,
     esercizio_id INT NOT NULL,
+    ripetizioni INT NOT NULL,
+    serie INT NOT NULL,
     PRIMARY KEY (scheda_id, esercizio_id),
     FOREIGN KEY (scheda_id) REFERENCES SchedeAllenamento(id),
     FOREIGN KEY (esercizio_id) REFERENCES Esercizi(id)
