@@ -29,7 +29,15 @@ export const handleGetPatient = async (req: Request, res: Response) => {
                 res.status(404).json({ message: "Il trattamento è terminato" });
             } else {
                 const [rows] = await pool.query<RowDataPacket[]>(
-                    "SELECT Pazienti.id, Pazienti.nome, Pazienti.cognome, Pazienti.data_nascita, Pazienti.genere, Pazienti.altezza, Pazienti.peso, Pazienti.diagnosi FROM Trattamenti JOIN Pazienti ON Trattamenti.paziente_id = Pazienti.id WHERE Trattamenti.fisioterapista_id = ? AND Pazienti.id = ?;",
+                    `SELECT 
+                        Pazienti.id, Pazienti.email, Pazienti.nome, Pazienti.cognome, Pazienti.data_nascita, Pazienti.genere, Pazienti.altezza, Pazienti.peso, Pazienti.diagnosi, 
+                        Trattamenti.data_inizio,
+                        COUNT(CASE WHEN Appuntamenti.data_appuntamento < CURRENT_DATE THEN 1 ELSE NULL END) as sedute_effettuate
+                    FROM Trattamenti 
+                    JOIN Pazienti ON Trattamenti.paziente_id = Pazienti.id 
+                    LEFT JOIN Appuntamenti ON Trattamenti.id = Appuntamenti.trattamento_id
+                    WHERE Trattamenti.fisioterapista_id = ? AND Pazienti.id = ? AND Trattamenti.in_corso = 1
+                    GROUP BY Pazienti.id, Trattamenti.id;`,
                     [fisioterapistaId, pazienteId]
                 );
                 res.status(200).json(rows);
