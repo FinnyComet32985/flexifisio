@@ -189,7 +189,7 @@ export const handleAddExerciseToTrainingCard = async (
                     });
                 } else {
                     const [addEsercizio] = await pool.query<ResultSetHeader>(
-                        "INSERT INTO schedaesercizi (scheda_id, esercizio_id, ripetizioni, serie) VALUES (?, ?, ?);",
+                        "INSERT INTO schedaesercizi (scheda_id, esercizio_id, ripetizioni, serie) VALUES (?, ?, ?, ?);",
                         [scheda_id, esercizio_id, ripetizioni, serie]
                     );
                     if (addEsercizio.affectedRows === 0) {
