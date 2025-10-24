@@ -16,3 +16,13 @@ export const handleGetProfile = async (req: Request, res: Response) => {
         res.status(200).json(rows[0]);
     }
 };
+
+export const handleUpdateProfile = async (req: Request, res: Response) => {
+    const fisioterapistaId = req.body.jwtPayload.id;
+    const { nome, cognome, email } = req.body;
+
+    if (!nome && !cognome && !email) {
+        res.status(400).json({ message: "Parametri mancanti" });
+    } else {
+    }
+};

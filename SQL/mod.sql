@@ -139,6 +139,7 @@ BEFORE INSERT ON Appuntamenti
 FOR EACH ROW
 BEGIN
     DECLARE trattamento_in_corso BOOLEAN;
+    DECLARE id_appuntamento INT;
 
     SELECT in_corso INTO trattamento_in_corso
     FROM Trattamenti

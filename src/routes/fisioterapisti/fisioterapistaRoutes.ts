@@ -22,6 +22,11 @@ fisioterapistaRouter.get(
     authenticateJWT,
     profileController.handleGetProfile
 );
+fisioterapistaRouter.patch(
+    "/profile",
+    authenticateJWT,
+    profileController.handleUpdateProfile
+);
 
 // gestione pazienti
 fisioterapistaRouter.get(
