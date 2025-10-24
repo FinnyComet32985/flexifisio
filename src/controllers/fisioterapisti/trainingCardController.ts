@@ -108,40 +108,86 @@ export const handleUpdateTrainingCard = async (req: Request, res: Response) => {
     const scheda_id = parseInt(req.params.id);
     const { nome, tipo_scheda, note } = req.body;
 
-    const [result] = await pool.query<RowDataPacket[]>(
-        "SELECT trattamenti.id as trattamenti_id, trattamenti.fisioterapista_id as fisioterapista_id, trattamenti.in_corso as in_corso, schedeallenamento.id as scheda_id FROM trattamenti JOIN schedeallenamento ON trattamenti.id=schedeallenamento.trattamento_id;",
-        []
-    );
-    if (result.length === 0) {
-        res.status(500).json({ error: "errore nella modifica della scheda" });
-    } else {
-        let dati = result.find((dato) => dato.scheda_id === scheda_id);
-        if (!dati) {
-            res.status(404).json({
-                message: "Scheda non trovata o non esistente",
+    // Controllo parametri: serve almeno un campo
+    if (nome === undefined && tipo_scheda === undefined && note === undefined) {
+        return res
+            .status(400)
+            .json({ message: "Nessun parametro da modificare" });
+    }
+
+    try {
+        // Verifico che la scheda esista, sia collegata al trattamento del fisioterapista e in corso
+        const [result] = await pool.query<RowDataPacket[]>(
+            `SELECT t.fisioterapista_id, t.in_corso
+             FROM trattamenti t
+             JOIN schedeallenamento s ON t.id = s.trattamento_id
+             WHERE s.id = ?`,
+            [scheda_id]
+        );
+
+        if (result.length === 0) {
+            return res.status(404).json({
+                message: "Scheda non trovata",
             });
-        } else {
-            if (dati.fisioterapista_id !== fisioterapistaId) {
-                res.status(403).json({
-                    message:
-                        "Non si dispone dei permessi per cancellare questa scheda",
-                });
-            } else if (dati.in_corso === 0) {
-                res.status(400).json({
-                    message: "Il trattamento non è in corso",
-                });
-            } else {
-                const [deleteScheda] = await pool.query<ResultSetHeader>(
-                    "UPDATE schedeallenamento SET nome =?, tipo_scheda =?, note =? WHERE id =?;",
-                    [nome, tipo_scheda, note, scheda_id]
-                );
-                if (deleteScheda.affectedRows === 0) {
-                    res.status(404).json({ message: "Errore nella modifica" });
-                } else {
-                    res.status(200).json({ message: "Scheda modificata" });
-                }
-            }
         }
+
+        const dati = result[0];
+
+        if (dati.fisioterapista_id !== fisioterapistaId) {
+            return res.status(403).json({
+                message:
+                    "Non si dispone dei permessi per modificare questa scheda",
+            });
+        }
+
+        if (dati.in_corso === 0) {
+            return res.status(400).json({
+                message: "Il trattamento non è in corso",
+            });
+        }
+
+        // Query dinamica per l’update
+        const fields: string[] = [];
+        const values: any[] = [];
+
+        if (nome !== undefined) {
+            fields.push("nome = ?");
+            values.push(nome);
+        }
+        if (tipo_scheda !== undefined) {
+            fields.push("tipo_scheda = ?");
+            values.push(tipo_scheda);
+        }
+        if (note !== undefined) {
+            fields.push("note = ?");
+            values.push(note);
+        }
+
+        values.push(scheda_id);
+
+        const updateQuery = `
+            UPDATE schedeallenamento
+            SET ${fields.join(", ")}
+            WHERE id = ?;
+        `;
+
+        const [updateResult] = await pool.query<ResultSetHeader>(
+            updateQuery,
+            values
+        );
+
+        if (updateResult.affectedRows === 0) {
+            return res
+                .status(500)
+                .json({ message: "Errore durante l'aggiornamento" });
+        }
+
+        return res.status(200).json({ message: "Scheda modificata" });
+    } catch (err) {
+        const error = err as Error;
+        return res.status(500).json({
+            message: "Errore durante la modifica: " + error.message,
+        });
     }
 };
 
@@ -301,61 +347,98 @@ export const handleUpdateExerciseFromTrainingCard = async (
     const fisioterapistaId = req.body.jwtPayload.id;
     const scheda_id = parseInt(req.params.id);
     const esercizio_id = parseInt(req.body.esercizio_id);
-    const ripetizioni = parseInt(req.body.ripetizioni);
-    if (isNaN(esercizio_id) || isNaN(ripetizioni) || isNaN(scheda_id)) {
-        res.status(400).json({ message: "I dati forniti non sono validi" });
-    } else {
+
+    const ripetizioni =
+        req.body.ripetizioni !== undefined
+            ? parseInt(req.body.ripetizioni)
+            : undefined;
+    const serie =
+        req.body.serie !== undefined ? parseInt(req.body.serie) : undefined;
+
+    // Serve almeno un campo da aggiornare
+    if (ripetizioni === undefined && serie === undefined) {
+        return res
+            .status(400)
+            .json({ message: "Nessun parametro da modificare" });
+    }
+
+    if (isNaN(esercizio_id) || isNaN(scheda_id)) {
+        return res
+            .status(400)
+            .json({ message: "I dati forniti non sono validi" });
+    }
+
+    try {
+        // Verifica esistenza e permesso
         const [result] = await pool.query<RowDataPacket[]>(
-            "SELECT trattamenti.id as trattamenti_id, trattamenti.fisioterapista_id as fisioterapista_id, trattamenti.in_corso as in_corso, schedeallenamento.id as scheda_id, schedaesercizi.esercizio_id FROM trattamenti JOIN schedeallenamento ON trattamenti.id=schedeallenamento.trattamento_id JOIN schedaesercizi ON schedeallenamento.id=schedaesercizi.scheda_id;",
-            []
+            `SELECT t.fisioterapista_id, t.in_corso
+             FROM trattamenti t
+             JOIN schedeallenamento s ON t.id = s.trattamento_id
+             JOIN schedaesercizi se ON s.id = se.scheda_id
+             WHERE s.id = ? AND se.esercizio_id = ?`,
+            [scheda_id, esercizio_id]
         );
+
         if (result.length === 0) {
-            res.status(500).json({
-                error: "Errore durante la modifica dell'esercizio",
+            return res.status(404).json({
+                message: "Esercizio non presente in questa scheda",
             });
-        } else {
-            let dati = result.filter((dato) => dato.scheda_id === scheda_id);
-            if (!dati) {
-                res.status(404).json({
-                    message: "Scheda non trovata o non esistente",
-                });
-            } else {
-                const dato = dati.find(
-                    (dato) => dato.esercizio_id === esercizio_id
-                );
-                if (dato === undefined) {
-                    res.status(404).json({
-                        message: "Esercizio non presente nella scheda",
-                    });
-                } else {
-                    if (dato.fisioterapista_id !== fisioterapistaId) {
-                        res.status(403).json({
-                            message:
-                                "Non si dispone dei permessi per aggiungere un esercizio a questa scheda",
-                        });
-                    } else if (dato.in_corso === 0) {
-                        res.status(400).json({
-                            message: "Il trattamento non è in corso",
-                        });
-                    } else {
-                        const [updateExercise] =
-                            await pool.query<ResultSetHeader>(
-                                "UPDATE schedaesercizi SET ripetizioni=? WHERE scheda_id=? AND esercizio_id=?;",
-                                [ripetizioni, scheda_id, esercizio_id]
-                            );
-                        if (updateExercise.affectedRows === 0) {
-                            res.status(404).json({
-                                message:
-                                    "Errore durante la modifica dell'esercizio",
-                            });
-                        } else {
-                            res.status(200).json({
-                                message: "Esercizio modificato con successo",
-                            });
-                        }
-                    }
-                }
-            }
         }
+
+        const dati = result[0];
+
+        if (dati.fisioterapista_id !== fisioterapistaId) {
+            return res.status(403).json({
+                message:
+                    "Non si dispone dei permessi per modificare questo esercizio",
+            });
+        }
+
+        if (dati.in_corso === 0) {
+            return res.status(400).json({
+                message: "Il trattamento non è in corso",
+            });
+        }
+
+        // Costruzione query dinamica
+        const fields: string[] = [];
+        const values: any[] = [];
+
+        if (ripetizioni !== undefined) {
+            fields.push("ripetizioni = ?");
+            values.push(ripetizioni);
+        }
+        if (serie !== undefined) {
+            fields.push("serie = ?");
+            values.push(serie);
+        }
+
+        values.push(scheda_id, esercizio_id);
+
+        const updateQuery = `
+            UPDATE schedaesercizi
+            SET ${fields.join(", ")}
+            WHERE scheda_id = ? AND esercizio_id = ?;
+        `;
+
+        const [updateExercise] = await pool.query<ResultSetHeader>(
+            updateQuery,
+            values
+        );
+
+        if (updateExercise.affectedRows === 0) {
+            return res.status(500).json({
+                message: "Errore durante la modifica dell'esercizio",
+            });
+        }
+
+        return res.status(200).json({
+            message: "Esercizio modificato con successo",
+        });
+    } catch (err) {
+        const error = err as Error;
+        return res.status(500).json({
+            message: "Errore durante la modifica. " + error.message,
+        });
     }
 };

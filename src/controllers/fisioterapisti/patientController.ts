@@ -152,28 +152,69 @@ export const handleUpdatePatient = async (req: Request, res: Response) => {
     const fisioterapistaId = req.body.jwtPayload.id;
     const pazienteId = parseInt(req.params.id);
     const { altezza, peso, diagnosi } = req.body;
+
+    // Controllo: serve almeno un parametro
     if (altezza === undefined && peso === undefined && diagnosi === undefined) {
-        res.status(400).json({ message: "Parametri mancanti" });
-    } else {
+        return res
+            .status(400)
+            .json({ message: "Nessun parametro da modificare" });
+    }
+
+    try {
+        // Verifica che il trattamento sia in corso
         const [rows_trattamenti] = await pool.query<RowDataPacket[]>(
             "SELECT in_corso FROM Trattamenti WHERE paziente_id = ? AND fisioterapista_id = ?;",
             [pazienteId, fisioterapistaId]
         );
 
-        if (rows_trattamenti[0].in_corso === 0) {
-            res.status(404).json({ message: "Il trattamento è terminato" });
-        } else {
-            const [update] = await pool.query<ResultSetHeader>(
-                "UPDATE pazienti SET altezza = ?, peso = ?, diagnosi = ? WHERE id = ?;",
-                [altezza, peso, diagnosi, pazienteId]
-            );
-            if (update.affectedRows === 0) {
-                res.status(500).json({
-                    message: "Errore durante la modifica",
-                });
-            } else {
-                res.status(200).json({ message: "Paziente modificato" });
-            }
+        if (!rows_trattamenti.length) {
+            return res
+                .status(404)
+                .json({ message: "Paziente non trovato o non associato" });
         }
+
+        if (rows_trattamenti[0].in_corso === 0) {
+            return res
+                .status(400)
+                .json({ message: "Il trattamento è terminato" });
+        }
+
+        // Costruzione query dinamica
+        const fields: string[] = [];
+        const values: any[] = [];
+
+        if (altezza !== undefined) {
+            fields.push("altezza = ?");
+            values.push(altezza);
+        }
+        if (peso !== undefined) {
+            fields.push("peso = ?");
+            values.push(peso);
+        }
+        if (diagnosi !== undefined) {
+            fields.push("diagnosi = ?");
+            values.push(diagnosi);
+        }
+
+        values.push(pazienteId);
+
+        const updateQuery = `
+            UPDATE pazienti
+            SET ${fields.join(", ")}
+            WHERE id = ?;
+        `;
+
+        const [update] = await pool.query<ResultSetHeader>(updateQuery, values);
+
+        if (update.affectedRows === 0) {
+            return res.status(404).json({ message: "Paziente non trovato" });
+        }
+
+        res.status(200).json({ message: "Paziente modificato" });
+    } catch (error) {
+        const err = error as Error;
+        res.status(500).json({
+            message: "Errore durante la modifica. " + err.message,
+        });
     }
 };

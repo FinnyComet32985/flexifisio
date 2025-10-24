@@ -22,24 +22,50 @@ export const handleUpdateProfile = async (req: Request, res: Response) => {
     const { nome, cognome, email } = req.body;
 
     if (!nome && !cognome && !email) {
-        res.status(400).json({ message: "Parametri mancanti" });
-    } else {
-        try {
-            const [result] = await pool.query<ResultSetHeader>(
-                "UPDATE fisioterapisti SET nome = ?, cognome = ?, email = ? WHERE id = ?;",
-                [nome, cognome, email, fisioterapistaId]
-            );
+        return res
+            .status(400)
+            .json({ message: "Nessun parametro da modificare" });
+    }
 
-            if (result.affectedRows === 0) {
-                res.status(500).json({ message: "Errore durante la modifica" });
-            } else {
-                res.status(200).json({ message: "Profilo modificato" });
-            }
-        } catch (error) {
-            const err = error as Error;
-            res.status(500).json({
-                message: "Errore durante la modifica. " + err.message,
-            });
+    try {
+        const fields: string[] = [];
+        const values: any[] = [];
+
+        if (nome) {
+            fields.push("nome = ?");
+            values.push(nome);
         }
+        if (cognome) {
+            fields.push("cognome = ?");
+            values.push(cognome);
+        }
+        if (email) {
+            fields.push("email = ?");
+            values.push(email);
+        }
+
+        // Aggiungiamo id per la clausola WHERE
+        values.push(fisioterapistaId);
+
+        const query = `
+        UPDATE fisioterapisti
+        SET ${fields.join(", ")}
+        WHERE id = ?;
+    `;
+
+        const [result] = await pool.query<ResultSetHeader>(query, values);
+
+        if (result.affectedRows === 0) {
+            return res
+                .status(404)
+                .json({ message: "Fisioterapista non trovato" });
+        }
+
+        res.status(200).json({ message: "Profilo modificato" });
+    } catch (error) {
+        const err = error as Error;
+        res.status(500).json({
+            message: "Errore durante la modifica. " + err.message,
+        });
     }
 };
