@@ -43,6 +43,48 @@ export const handleCreateAppointment = async (req: Request, res: Response) => {
         }
     }
 };
+
+export const handleConfirmAppointment = async (req: Request, res: Response) => {
+    const fisioterapistaId = req.body.jwtPayload.id;
+    const appuntamento_id = req.params.id;
+
+    const [result] = await pool.query<RowDataPacket[]>(
+        "SELECT trattamenti.fisioterapista_id, trattamenti.in_corso FROM trattamenti join appuntamenti on trattamenti.id = appuntamenti.trattamento_id WHERE appuntamenti.id=?;",
+        [appuntamento_id]
+    );
+    if (!result) {
+        res.status(404).json({ message: "Nessun trattamento trovato" });
+    } else if (
+        result[0].fisioterapista_id !== fisioterapistaId ||
+        result[0].in_corso !== 1
+    ) {
+        res.status(403).json({
+            message: "Il paziente è trattato da un altro fisioterapista",
+        });
+    } else {
+        try {
+            const [result] = await pool.query<ResultSetHeader>(
+                "UPDATE appuntamenti SET stato_conferma='Confermato' WHERE id = ?; ",
+                [appuntamento_id]
+            );
+            if (result.affectedRows === 0) {
+                res.status(500).json({
+                    message: "Errore durante la conferma dell'appuntamento",
+                });
+            } else {
+                res.status(200).json({
+                    message: "Appuntamento confermato con successo",
+                });
+            }
+        } catch (error) {
+            const err = error as Error;
+            res.status(500).json({
+                message: "Errore durante la conferma. " + err.message,
+            });
+        }
+    }
+};
+
 // update appuntamento
 export const handleUpdateAppointment = async (req: Request, res: Response) => {
     const fisioterapistaId = req.body.jwtPayload.id;

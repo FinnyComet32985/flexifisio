@@ -100,6 +100,11 @@ fisioterapistaRouter.patch(
     authenticateJWT,
     appointmentController.handleUpdateAppointment
 );
+fisioterapistaRouter.post(
+    "/appointment/:id/confirm",
+    authenticateJWT,
+    appointmentController.handleConfirmAppointment
+);
 fisioterapistaRouter.delete(
     "/appointment/:id",
     authenticateJWT,

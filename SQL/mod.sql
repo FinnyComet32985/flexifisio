@@ -191,7 +191,7 @@ BEGIN
 
     SELECT id INTO id_appuntamento
     FROM appuntamenti
-    WHERE data_appuntamento=NEW.data_appuntamento AND ora_appuntamento=NEW.ora_appuntamento;
+    WHERE data_appuntamento = NEW.data_appuntamento AND ora_appuntamento = NEW.ora_appuntamento AND id != OLD.id;
 
     IF id_appuntamento IS NOT NULL THEN
         SIGNAL SQLSTATE '45000'
