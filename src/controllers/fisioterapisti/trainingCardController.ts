@@ -61,6 +61,83 @@ export const handleGetTrainingCards = async (req: Request, res: Response) => {
         res.status(200).json(rows);
     }
 };
+
+// get singola scheda di allenamento
+export const handleGetFullTrainingCard = async (
+    req: Request,
+    res: Response
+) => {
+    const fisioterapistaId = req.body.jwtPayload.id;
+    const scheda_id = parseInt(req.params.id);
+
+    if (isNaN(scheda_id)) {
+        return res.status(400).json({ message: "ID scheda non valido." });
+    }
+
+    try {
+        // Query unica per ottenere i dettagli della scheda e tutti gli esercizi associati
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `
+            SELECT 
+                s.id AS scheda_id,
+                s.nome AS scheda_nome,
+                s.tipo_scheda,
+                s.note,
+                t.fisioterapista_id,
+                e.id AS esercizio_id,
+                e.nome AS esercizio_nome,
+                e.descrizione,
+                e.descrizione_svolgimento,
+                e.consigli_svolgimento,
+                e.immagine,
+                se.ripetizioni,
+                se.serie
+            FROM schedeallenamento s
+            JOIN trattamenti t ON s.trattamento_id = t.id
+            LEFT JOIN schedaesercizi se ON s.id = se.scheda_id
+            LEFT JOIN esercizi e ON se.esercizio_id = e.id
+            WHERE s.id = ? AND t.fisioterapista_id = ? AND t.in_corso = 1;
+        `,
+            [scheda_id, fisioterapistaId]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({
+                message: "Scheda non trovata o accesso non consentito.",
+            });
+        }
+
+        // Raggruppa i risultati per creare un oggetto JSON strutturato
+        const schedaCompleta = {
+            id: rows[0].scheda_id,
+            nome: rows[0].scheda_nome,
+            tipo_scheda: rows[0].tipo_scheda,
+            note: rows[0].note,
+            esercizi: rows
+                .filter((row) => row.esercizio_id !== null)
+                .map((row) => ({
+                    id: row.esercizio_id,
+                    nome: row.esercizio_nome,
+                    descrizione: row.descrizione,
+                    descrizione_svolgimento: row.descrizione_svolgimento,
+                    consigli_svolgimento: row.consigli_svolgimento,
+                    immagine: row.immagine,
+                    video: row.video,
+                    ripetizioni: row.ripetizioni,
+                    serie: row.serie,
+                })),
+        };
+
+        res.status(200).json(schedaCompleta);
+    } catch (error) {
+        const err = error as Error;
+        res.status(500).json({
+            message: "Errore nel recupero della scheda.",
+            error: err.message,
+        });
+    }
+};
+
 // delete scheda di allenamento
 export const handleDeleteTrainingCard = async (req: Request, res: Response) => {
     const fisioterapistaId = req.body.jwtPayload.id;

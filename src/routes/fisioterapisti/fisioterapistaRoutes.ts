@@ -122,6 +122,11 @@ fisioterapistaRouter.get(
     authenticateJWT,
     trainingCardController.handleGetTrainingCards
 );
+fisioterapistaRouter.get(
+    "/trainingCard/full/:id",
+    authenticateJWT,
+    trainingCardController.handleGetFullTrainingCard
+);
 fisioterapistaRouter.post(
     "/trainingCard/:id",
     authenticateJWT,
