@@ -142,7 +142,7 @@ export const handleLogout = async (req: Request, res: Response) => {
     } else {
         const refreshToken = cookies.jwt;
         const [rows] = await pool.query<RowDataPacket[]>(
-            " SELECT * FROM Fisioterapisti WHERE refreshToken = ?",
+            "SELECT * FROM Fisioterapisti WHERE refreshToken = ?",
             [refreshToken]
         );
         if (rows.length === 0) {
@@ -166,5 +166,43 @@ export const handleLogout = async (req: Request, res: Response) => {
             secure: true,
         });
         res.sendStatus(204);
+    }
+};
+
+export const handleChangePassword = async (req: Request, res: Response) => {
+    const { oldPassword, newPassword } = req.body;
+    const fisioterapistaId = req.body.jwtPayload.id;
+    if (!oldPassword || !newPassword) {
+        res.status(400).json({
+            message: "Le password sono obbligatorie",
+        });
+    } else {
+        const [rows] = await pool.query<RowDataPacket[]>(
+            "SELECT password FROM Fisioterapisti WHERE id = ?",
+            [fisioterapistaId]
+        );
+        if (rows.length === 0) {
+            res.status(404).json({ message: "Fisioterapista non trovato" });
+        } else {
+            const match = await bcrypt.compare(oldPassword, rows[0].password);
+            if (match) {
+                const hashedPassword = await bcrypt.hash(newPassword, 10);
+                const [result] = await pool.query<ResultSetHeader>(
+                    "UPDATE Fisioterapisti SET password = ? WHERE id = ?",
+                    [hashedPassword, fisioterapistaId]
+                );
+                if (result.affectedRows === 0) {
+                    res.status(500).json({
+                        message: "Errore durante la modifica della password",
+                    });
+                } else {
+                    res.status(200).json({
+                        message: "Password modificata con successo",
+                    });
+                }
+            } else {
+                res.status(401).json({ message: "Password errata" });
+            }
+        }
     }
 };

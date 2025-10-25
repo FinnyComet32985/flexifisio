@@ -15,6 +15,10 @@ fisioterapistaRouter.post("/register", authController.handleRegister);
 fisioterapistaRouter.post("/login", authController.handleLogin);
 fisioterapistaRouter.post("/logout", authController.handleLogout);
 fisioterapistaRouter.post("/refreshToken", authController.handleRefreshToken);
+fisioterapistaRouter.post(
+    "/changePassword",
+    authController.handleChangePassword
+);
 
 // gestione profilo fisioterapista
 fisioterapistaRouter.get(
