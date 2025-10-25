@@ -131,11 +131,12 @@ export const handleUpdateExercise = async (req: Request, res: Response) => {
                 }
 
                 values.push(id);
+                values.push(fisioterapistaId);
 
                 const query = `
                 UPDATE Esercizi
                 SET ${fields.join(", ")}
-                WHERE id = ?;
+                WHERE id = ? AND fisioterapista_id = ?;
                 `;
 
                 const [result] = await pool.query<ResultSetHeader>(
