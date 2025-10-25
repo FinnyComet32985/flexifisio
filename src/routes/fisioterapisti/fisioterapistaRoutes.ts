@@ -66,6 +66,11 @@ fisioterapistaRouter.get(
     authenticateJWT,
     exerciseController.handleGetExercises
 );
+fisioterapistaRouter.patch(
+    "/exercise/:id",
+    authenticateJWT,
+    exerciseController.handleUpdateExercise
+);
 fisioterapistaRouter.delete(
     "/exercise/:id",
     authenticateJWT,

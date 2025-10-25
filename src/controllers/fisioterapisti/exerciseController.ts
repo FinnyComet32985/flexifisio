@@ -26,7 +26,7 @@ export const handleCreateExercise = async (req: Request, res: Response) => {
         const [result] = await pool.query<ResultSetHeader>(
             "INSERT INTO Esercizi (nome, descrizione, descrizione_svolgimento, consigli_svolgimento, immagine, video, fisioterapista_id) VALUES (?,?,?,?,?,?,?);",
             [
-                nome, //? deve essere univoco per fisioterapista
+                nome,
                 descrizione,
                 descrizione_svolgimento,
                 consigli_svolgimento,
@@ -74,6 +74,92 @@ export const handleGetExercises = async (req: Request, res: Response) => {
         }
     }
 };
+
+export const handleUpdateExercise = async (req: Request, res: Response) => {
+    const fisioterapista_id = req.body.jwtPayload.id;
+    const id = req.params.id;
+    const {
+        nome,
+        descrizione,
+        descrizione_svolgimento,
+        consigli_svolgimento,
+        immagine,
+        video,
+        fisioterapistaId,
+    } = req.body;
+
+    if (!id) {
+        res.status(400).json({ message: "Parametri mancanti" });
+    } else {
+        if (
+            !nome &&
+            !descrizione &&
+            !descrizione_svolgimento &&
+            !consigli_svolgimento &&
+            !immagine &&
+            !video
+        ) {
+            res.status(400).json({ message: "Nessun parametro da modificare" });
+        } else {
+            try {
+                const fields: string[] = [];
+                const values: any[] = [];
+
+                if (nome) {
+                    fields.push("nome = ?");
+                    values.push(nome);
+                }
+                if (descrizione) {
+                    fields.push("descrizione = ?");
+                    values.push(descrizione);
+                }
+                if (descrizione_svolgimento) {
+                    fields.push("descrizione_svolgimento = ?");
+                    values.push(descrizione_svolgimento);
+                }
+                if (consigli_svolgimento) {
+                    fields.push("consigli_svolgimento = ?");
+                    values.push(consigli_svolgimento);
+                }
+                if (immagine) {
+                    fields.push("immagine = ?");
+                    values.push(immagine);
+                }
+                if (video) {
+                    fields.push("video = ?");
+                    values.push(video);
+                }
+
+                values.push(id);
+
+                const query = `
+                UPDATE Esercizi
+                SET ${fields.join(", ")}
+                WHERE id = ?;
+                `;
+
+                const [result] = await pool.query<ResultSetHeader>(
+                    query,
+                    values
+                );
+
+                if (result.affectedRows === 0) {
+                    return res
+                        .status(404)
+                        .json({ message: "Allenamento non trovato" });
+                }
+
+                res.status(200).json({ message: "Allenamento modificato" });
+            } catch (error) {
+                const err = error as Error;
+                res.status(500).json({
+                    message: "Errore durante la modifica. " + err.message,
+                });
+            }
+        }
+    }
+};
+
 // cancella esercizio
 export const handleDeleteExercises = async (req: Request, res: Response) => {
     const fisioterapistaId = req.body.jwtPayload.id;
