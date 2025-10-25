@@ -17,6 +17,7 @@ fisioterapistaRouter.post("/logout", authController.handleLogout);
 fisioterapistaRouter.post("/refreshToken", authController.handleRefreshToken);
 fisioterapistaRouter.post(
     "/changePassword",
+    authenticateJWT,
     authController.handleChangePassword
 );
 
