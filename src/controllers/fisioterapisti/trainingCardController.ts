@@ -34,7 +34,10 @@ export const handleCreateTrainingCard = async (req: Request, res: Response) => {
                     message: "Errore durante la creazione della scheda",
                 });
             } else {
-                res.status(200).json({ message: "Scheda creata" });
+                res.status(201).json({
+                    message: "Scheda creata",
+                    scheda_id: insert.insertId,
+                });
             }
         }
     }
