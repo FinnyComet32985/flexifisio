@@ -277,8 +277,9 @@ export const handleGetExercisesFromTrainingCard = async (
         );
         if (rows.length === 0) {
             res.status(404).json({ message: "Nessun esercizio trovato" });
+        } else {
+            res.status(200).json(rows);
         }
-        res.status(200).json(rows);
     }
 };
 // elimina esercizio
