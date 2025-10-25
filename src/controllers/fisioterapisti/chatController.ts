@@ -3,52 +3,69 @@ import { Request, Response } from "express";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 // visualizza chat
+// visualizza chat
 export const handleGetChat = async (req: Request, res: Response) => {
     const fisioterapistaId = req.body.jwtPayload.id;
     const paziente_id = req.params.id;
+
     if (paziente_id === undefined) {
-        const [trattamenti] = await pool.query<RowDataPacket[]>(
-            "SELECT trattamento_id FROM messaggi WHERE trattamento_id IN (SELECT id FROM trattamenti WHERE fisioterapista_id = ? AND in_corso = 1);",
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT 
+                p.id,
+                p.nome,
+                p.cognome,
+                m.testo AS ultimo_testo,
+                m.data_invio AS ultima_data_invio,
+                m.mittente AS ultimo_mittente
+            FROM Pazienti p
+            JOIN trattamenti t ON p.id = t.paziente_id
+            LEFT JOIN messaggi m ON m.id = (
+                SELECT id 
+                FROM messaggi 
+                WHERE trattamento_id = t.id 
+                ORDER BY data_invio DESC 
+                LIMIT 1
+            )
+            WHERE 
+                t.fisioterapista_id = ? 
+                AND t.in_corso = 1
+                AND m.data_invio IS NOT NULL
+            ORDER BY ultima_data_invio DESC`,
             [fisioterapistaId]
         );
-        if (trattamenti.length === 0) {
-            res.status(404).json({ message: "Nessun trattamento trovato" });
-        } else {
-            const trattamentoIds = trattamenti.map(
-                (trattamento) => trattamento.trattamento_id
-            );
-            const [rows] = await pool.query<RowDataPacket[]>(
-                "SELECT pazienti.id, pazienti.nome, pazienti.cognome FROM Pazienti JOIN trattamenti ON pazienti.id = trattamenti.paziente_id WHERE trattamenti.id IN (?)",
-                [trattamentoIds]
-            );
-            if (rows.length === 0) {
-                res.status(404).json({ message: "Nessun trattamento trovato" });
-            } else {
-                res.status(200).json(rows);
-            }
-        }
-    } else {
-        const [trattamento] = await pool.query<RowDataPacket[]>(
-            "SELECT id FROM trattamenti WHERE fisioterapista_id = ? AND paziente_id = ? AND in_corso = 1;",
-            [fisioterapistaId, paziente_id]
-        );
 
-        if (trattamento.length === 0) {
-            res.status(404).json({ message: "Nessun trattamento trovato" });
-        } else {
-            const trattamentoId = trattamento[0].id;
-            const [rows] = await pool.query<RowDataPacket[]>(
-                "SELECT id, testo, data_invio, mittente FROM messaggi WHERE trattamento_id = ?;",
-                [trattamentoId]
-            );
-            if (rows.length === 0) {
-                res.status(404).json({ message: "Nessun messaggio trovato" });
-            } else {
-                res.status(200).json(rows);
-            }
+        if (rows.length === 0) {
+            return res
+                .status(404)
+                .json({ message: "Nessun paziente con messaggi" });
         }
+
+        return res.status(200).json(rows);
     }
+
+    const [trattamento] = await pool.query<RowDataPacket[]>(
+        "SELECT id FROM trattamenti WHERE fisioterapista_id = ? AND paziente_id = ? AND in_corso = 1;",
+        [fisioterapistaId, paziente_id]
+    );
+
+    if (trattamento.length === 0) {
+        return res.status(404).json({ message: "Nessun trattamento trovato" });
+    }
+
+    const trattamentoId = trattamento[0].id;
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+        "SELECT id, testo, data_invio, mittente FROM messaggi WHERE trattamento_id = ? ORDER BY data_invio ASC;",
+        [trattamentoId]
+    );
+
+    if (rows.length === 0) {
+        return res.status(404).json({ message: "Nessun messaggio trovato" });
+    }
+
+    return res.status(200).json(rows);
 };
+
 // invia messaggio
 export const handleSendMessage = async (req: Request, res: Response) => {
     const fisioterapistaId = req.body.jwtPayload.id;
