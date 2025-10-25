@@ -85,10 +85,9 @@ export const handleUpdateExercise = async (req: Request, res: Response) => {
         consigli_svolgimento,
         immagine,
         video,
-        fisioterapistaId,
     } = req.body;
 
-    if (!id) {
+    if (!id || !fisioterapista_id) {
         res.status(400).json({ message: "Parametri mancanti" });
     } else {
         if (
@@ -131,7 +130,7 @@ export const handleUpdateExercise = async (req: Request, res: Response) => {
                 }
 
                 values.push(id);
-                values.push(fisioterapistaId);
+                values.push(fisioterapista_id);
 
                 const query = `
                 UPDATE Esercizi
