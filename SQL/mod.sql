@@ -295,7 +295,7 @@ CREATE TABLE SchedaEsercizi (
     ripetizioni INT NOT NULL,
     serie INT NOT NULL,
     PRIMARY KEY (scheda_id, esercizio_id),
-    FOREIGN KEY (scheda_id) REFERENCES SchedeAllenamento(id),
+    FOREIGN KEY (scheda_id) REFERENCES SchedeAllenamento(id) ON DELETE CASCADE,
     FOREIGN KEY (esercizio_id) REFERENCES Esercizi(id)
 );
 
