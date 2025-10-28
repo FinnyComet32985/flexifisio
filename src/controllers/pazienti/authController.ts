@@ -233,22 +233,20 @@ export async function login(req: Request, res: Response) {
     const accessToken = signAccess(payload);
     const refreshToken = signRefresh(payload);
 
-    // Usa UUID per identificare il refresh token nel DB (veloce, indicizzabile)
-    const refreshKey = uuidv4();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     await pool.query(
       `INSERT INTO refresh_tokens (token_hash, id_user, user_type, expires_at)
        VALUES (?, ?, 'P', ?)`,
-      [refreshKey, user.id, expiresAt]
+      [refreshToken, user.id, expiresAt]
     );
 
     // Imposta cookie sicuro con refresh token (stringa + chiave DB)
-    res.cookie("refreshToken", refreshKey, {
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: true,
-      sameSite: "strict",
-      path: "/auth/",
+      sameSite: "none",
+      path: "/pazienti/auth/",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 giorni
     });
 
@@ -257,8 +255,8 @@ export async function login(req: Request, res: Response) {
       .status(HttpStatus.OK.code)
       .json(
         new ResponseModel(HttpStatus.OK.code, HttpStatus.OK.status, "Login effettuato con successo", {
-          accessToken,
-          refreshToken,
+          accessToken: accessToken,
+          user: data[0]
         })
       );
   } catch (err: any) {
@@ -275,115 +273,160 @@ export async function login(req: Request, res: Response) {
   }
 }
 
-/**
- * 🔹 REFRESH TOKEN - Rigenera access token
- */
 export async function refreshToken(req: Request, res: Response) {
-  try {
-    const { refreshToken } = req.cookies;
+ try {
+  const { refreshToken } = req.cookies;
+  // Soglia: rigenera il refresh token se mancano meno di 2 giorni (48 ore) alla scadenza.
+  const REFRESH_THRESHOLD_DAYS = 2; 
 
-    if (!refreshToken) {
-      return res
-        .status(HttpStatus.BAD_REQUEST.code)
-        .json(
-          new ResponseModel(
-            HttpStatus.BAD_REQUEST.code,
-            HttpStatus.BAD_REQUEST.status,
-            "refreshToken mancante"
-          )
-        );
-    }
-
-    const [rows] = await pool.query<RowDataPacket[]>(
-      "SELECT * FROM refresh_tokens WHERE token_hash = ? AND revoked = 0",
-      [refreshToken]
+  if (!refreshToken) {
+   return res
+    .status(HttpStatus.BAD_REQUEST.code)
+    .json(
+     new ResponseModel(
+      HttpStatus.BAD_REQUEST.code,
+      HttpStatus.BAD_REQUEST.status,
+      "refreshToken mancante"
+     )
     );
-
-    if (rows.length === 0) {
-      return res
-        .status(HttpStatus.UNAUTHORIZED.code)
-        .json(
-          new ResponseModel(
-            HttpStatus.UNAUTHORIZED.code,
-            HttpStatus.UNAUTHORIZED.status,
-            "Refresh token non valido"
-          )
-        );
-    }
-
-    const tokenRow = rows[0];
-
-    if (new Date(tokenRow.expires_at) < new Date()) {
-      await pool.query("UPDATE refresh_tokens SET revoked = 1 WHERE id = ?", [tokenRow.id]);
-      return res
-        .status(HttpStatus.UNAUTHORIZED.code)
-        .json(
-          new ResponseModel(
-            HttpStatus.UNAUTHORIZED.code,
-            HttpStatus.UNAUTHORIZED.status,
-            "Refresh token scaduto"
-          )
-        );
-    }
-
-    // Decodifica JWT (solo per validazione firma, non DB)
-    const decoded = verifyRefresh(req.cookies.refreshToken);
-    if (!decoded) {
-      return res
-        .status(HttpStatus.UNAUTHORIZED.code)
-        .json(
-          new ResponseModel(
-            HttpStatus.UNAUTHORIZED.code,
-            HttpStatus.UNAUTHORIZED.status,
-            "Token JWT non valido"
-          )
-        );
-    }
-
-    // Genera nuovi token
-    const payload = { id: tokenRow.id_user };
-    const newAccessToken = signAccess(payload);
-    const newRefreshToken = signRefresh(payload);
-    const newRefreshKey = uuidv4();
-    const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-    await pool.query(
-      "INSERT INTO refresh_tokens (token_hash, id_user, user_type, expires_at) VALUES (?, ?, 'P', ?)",
-      [newRefreshKey, tokenRow.id_user, newExpiresAt]
-    );
-
-    await pool.query("UPDATE refresh_tokens SET revoked = 1 WHERE id = ?", [tokenRow.id]);
-
-    res.cookie("refreshToken", newRefreshKey, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      path: "/auth/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    return res
-      .status(HttpStatus.OK.code)
-      .json(
-        new ResponseModel(
-          HttpStatus.OK.code,
-          HttpStatus.OK.status,
-          "Token rigenerato con successo",
-          { accessToken: newAccessToken, refreshToken: newRefreshToken }
-        )
-      );
-  } catch (err: any) {
-    console.error("Errore refresh token:", err);
-    return res
-      .status(HttpStatus.INTERNAL_SERVER_ERROR.code)
-      .json(
-        new ResponseModel(
-          HttpStatus.INTERNAL_SERVER_ERROR.code,
-          HttpStatus.INTERNAL_SERVER_ERROR.status,
-          err.message
-        )
-      );
   }
+
+  // 1. Cerca il token nel DB e verifica che non sia revocato
+  const [rows] = await pool.query<RowDataPacket[]>(
+   "SELECT * FROM refresh_tokens WHERE token_hash = ? AND revoked = 0",
+   [refreshToken]
+  );
+
+  if (rows.length === 0) {
+   return res
+    .status(HttpStatus.UNAUTHORIZED.code)
+    .json(
+     new ResponseModel(
+      HttpStatus.UNAUTHORIZED.code,
+      HttpStatus.UNAUTHORIZED.status,
+      "Refresh token non valido o già revocato"
+     )
+    );
+  }
+
+  const tokenRow = rows[0];
+  const tokenExpiresAt = new Date(tokenRow.expires_at);
+
+  // 2. Verifica scadenza (hard)
+  if (tokenExpiresAt < new Date()) {
+   await pool.query("UPDATE refresh_tokens SET revoked = 1 WHERE id = ?", [tokenRow.id]);
+   return res
+    .status(HttpStatus.UNAUTHORIZED.code)
+    .json(
+     new ResponseModel(
+      HttpStatus.UNAUTHORIZED.code,
+      HttpStatus.UNAUTHORIZED.status,
+      "Refresh token scaduto"
+     )
+    );
+  }
+
+  // 3. Decodifica JWT (per validazione firma)
+  const decoded = verifyRefresh(req.cookies.refreshToken);
+  if (!decoded) {
+   return res
+    .status(HttpStatus.UNAUTHORIZED.code)
+    .json(
+     new ResponseModel(
+      HttpStatus.UNAUTHORIZED.code,
+      HttpStatus.UNAUTHORIZED.status,
+      "Token JWT non valido (firma)"
+     )
+    );
+  }
+    
+    // ⭐ 4. Recupera i dati utente
+    const [userDataRows] = await pool.query<RowDataPacket[]>(
+        "SELECT * FROM Pazienti WHERE id = ?",
+        [tokenRow.id_user]
+    );
+
+    if (userDataRows.length === 0) {
+        return res
+            .status(HttpStatus.NOT_FOUND.code)
+            .json(
+                new ResponseModel(
+                    HttpStatus.NOT_FOUND.code,
+                    HttpStatus.NOT_FOUND.status,
+                    "Utente non trovato"
+                )
+            );
+    }
+    const user = userDataRows[0];
+    
+  // --- LOGICA DI RIGENERAZIONE CONDIZIONALE ---
+  
+  // Calcola il tempo rimanente alla scadenza
+  const msRemaining = tokenExpiresAt.getTime() - Date.now();
+  const daysRemaining = msRemaining / (1000 * 60 * 60 * 24);
+  
+  // Determina se il refresh token deve essere rigenerato
+  const shouldRegenerateRefreshToken = daysRemaining < REFRESH_THRESHOLD_DAYS;
+
+  const payload = { id: user.id };
+  const newAccessToken = signAccess(payload);
+  let finalRefreshToken = refreshToken; 
+  let responseMessage = "Access token rigenerato con successo";
+
+  if (shouldRegenerateRefreshToken) {
+   // Rigenera ANCHE il refresh token
+   finalRefreshToken = signRefresh(payload);
+   const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+   // Inserisci il nuovo token e revoca il vecchio
+   await pool.query(
+    "INSERT INTO refresh_tokens (token_hash, id_user, user_type, expires_at) VALUES (?, ?, 'P', ?)",
+    [finalRefreshToken, user.id, newExpiresAt]
+   );
+   await pool.query("UPDATE refresh_tokens SET revoked = 1 WHERE id = ?", [tokenRow.id]);
+   
+   // Imposta il nuovo token nel cookie
+   res.cookie("refreshToken", finalRefreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/pazienti/auth/",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+   });
+
+   responseMessage = "Access e Refresh token rigenerati con successo";
+  }
+
+    // ⭐ 5. Prepara i dati utente per la risposta (rimuovi password)
+    const userResponseData = { ...user };
+    delete userResponseData.password;
+
+  // 6. Risposta finale: SOLO access token e dati utente (come il login)
+  return res
+   .status(HttpStatus.OK.code)
+   .json(
+    new ResponseModel(
+      HttpStatus.OK.code,
+      HttpStatus.OK.status,
+      responseMessage,
+      { 
+        accessToken: newAccessToken, 
+        user: userResponseData // Dati utente puliti
+      } 
+    )
+   );
+ } catch (err: any) {
+  console.error("Errore refresh token:", err);
+  return res
+   .status(HttpStatus.INTERNAL_SERVER_ERROR.code)
+   .json(
+    new ResponseModel(
+     HttpStatus.INTERNAL_SERVER_ERROR.code,
+     HttpStatus.INTERNAL_SERVER_ERROR.status,
+     "Errore interno del server durante il refresh."
+    )
+   );
+ }
 }
 
 /**
@@ -410,8 +453,8 @@ export async function logout(req: Request, res: Response) {
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: true,
-      sameSite: "strict",
-      path: "/auth/",
+      sameSite: "none",
+      path: "/pazienti/auth/",
     });
 
     return res
