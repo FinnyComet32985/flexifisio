@@ -7,34 +7,14 @@ import ResponseModel from "../../utils/response";
 import { signAccess, signRefresh, verifyRefresh } from "../../utils/jwt";
 import { v4 as uuidv4 } from "uuid";
 
-/**
- * 🔹 REGISTER - Crea un nuovo paziente
- */
-export async function register(req: Request, res: Response) {
+export async function registerEmail(req: Request, res: Response) {
   try {
     const {
-      nome,
-      cognome,
-      email,
-      data_nascita,
-      password,
-      genere,
-      altezza,
-      peso,
-      diagnosi,
+      email
     } = req.body;
 
-    // Validazioni base
     if (
-      !nome ||
-      !cognome ||
-      !email ||
-      !data_nascita ||
-      !password ||
-      !(genere === "M" || genere === "F" || genere === "Altro") ||
-      !altezza ||
-      !peso ||
-      !diagnosi
+      !email
     ) {
       return res
         .status(HttpStatus.BAD_REQUEST.code)
@@ -47,20 +27,111 @@ export async function register(req: Request, res: Response) {
         );
     }
 
-    // Verifica duplicato
     const [existsAccount] = await pool.query<RowDataPacket[]>(
-      "SELECT id FROM Pazienti WHERE email = ?",
+      "SELECT id, password FROM Pazienti WHERE email = ?",
       [email]
     );
 
-    if (existsAccount.length > 0) {
+    if (existsAccount.length === 0) {
       return res
-        .status(HttpStatus.CONFLICT.code)
+        .status(HttpStatus.NOT_FOUND.code) // 404
+        .json(
+          new ResponseModel(
+            HttpStatus.NOT_FOUND.code,
+            HttpStatus.NOT_FOUND.status,
+            "Email non trovata. Il fisioterapista deve pre-registrare l'email."
+          )
+        );
+    }
+    
+    if (existsAccount[0].password) {
+      return res
+        .status(HttpStatus.CONFLICT.code) // 409
         .json(
           new ResponseModel(
             HttpStatus.CONFLICT.code,
             HttpStatus.CONFLICT.status,
-            "Paziente già registrato"
+            "Paziente già registrato. Utilizza la pagina di login."
+          )
+        );
+    } else {
+      return res
+        .status(HttpStatus.ACCEPTED.code) // 202
+        .json(
+          new ResponseModel(
+            HttpStatus.ACCEPTED.code,
+            HttpStatus.ACCEPTED.status,
+            "Email verificata. Procedi alla registrazione completa."
+          )
+        );
+    }
+
+  } catch (err: any) {
+    return res
+      .status(HttpStatus.INTERNAL_SERVER_ERROR.code)
+      .json(
+        new ResponseModel(
+          HttpStatus.INTERNAL_SERVER_ERROR.code,
+          HttpStatus.INTERNAL_SERVER_ERROR.status,
+          err.message
+        )
+      );
+  }
+}
+
+export async function register(req: Request, res: Response) {
+  try {
+    const {
+      email,
+      password,
+    } = req.body;
+
+    // Validazioni dei campi obbligatori (nome, cognome, email, data_nascita, password, genere)
+    if (
+      !email ||
+      !password
+    ) {
+      return res
+        .status(HttpStatus.BAD_REQUEST.code)
+        .json(
+          new ResponseModel(
+            HttpStatus.BAD_REQUEST.code,
+            HttpStatus.BAD_REQUEST.status,
+            "Campi obbligatori mancanti o non validi (Nome, Cognome, Email, Data di Nascita, Password, Genere)."
+          )
+        );
+    }
+
+    // 1. Verifica l'esistenza dell'account e lo stato della password
+    const [existsAccount] = await pool.query<RowDataPacket[]>(
+      "SELECT id, password FROM Pazienti WHERE email = ?",
+      [email]
+    );
+
+    if (existsAccount.length === 0) {
+      // Se l'email NON è stata trovata (non pre-registrata dal fisioterapista)
+      return res
+        .status(HttpStatus.NOT_FOUND.code) // 404
+        .json(
+          new ResponseModel(
+            HttpStatus.NOT_FOUND.code,
+            HttpStatus.NOT_FOUND.status,
+            "Email non trovata. Contatta il fisioterapista per la pre-registrazione."
+          )
+        );
+    }
+
+    const pazienteId = existsAccount[0].id;
+    
+    if (existsAccount[0].password) {
+      // Se ha una password impostata, la registrazione è già stata effettuata.
+      return res
+        .status(HttpStatus.CONFLICT.code) // 409
+        .json(
+          new ResponseModel(
+            HttpStatus.CONFLICT.code,
+            HttpStatus.CONFLICT.status,
+            "Paziente già completamente registrato. Utilizza la pagina di login."
           )
         );
     }
@@ -68,18 +139,26 @@ export async function register(req: Request, res: Response) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await pool.query(
-      `INSERT INTO Pazienti (nome, cognome, email, password, data_nascita, genere, altezza, peso, diagnosi)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [nome, cognome, email, hashedPassword, data_nascita, genere, altezza, peso, diagnosi]
+      `
+      UPDATE Pazienti 
+      SET 
+        password = ?,
+      WHERE id = ?
+      `,
+      [
+        hashedPassword,
+        pazienteId // Usa l'ID per l'aggiornamento
+      ]
     );
 
+    // 4. Risposta di successo
     return res
       .status(HttpStatus.CREATED.code)
       .json(
         new ResponseModel(
           HttpStatus.CREATED.code,
           HttpStatus.CREATED.status,
-          "Account creato con successo"
+          "Registrazione completata e account attivato con successo"
         )
       );
   } catch (err: any) {
@@ -95,9 +174,6 @@ export async function register(req: Request, res: Response) {
   }
 }
 
-/**
- * 🔹 LOGIN - Autentica il paziente
- */
 export async function login(req: Request, res: Response) {
   try {
     const { email, password } = req.body;

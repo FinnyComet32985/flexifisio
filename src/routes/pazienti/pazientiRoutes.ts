@@ -16,7 +16,7 @@ export const pazientiRouter = Router();
 /* =======================================================
    AUTH ROUTES (PUBBLICHE)
    ======================================================= */
-pazientiRouter.post("/auth/register", authController.register);
+pazientiRouter.post("/auth/check-email", authController.registerEmail);
 pazientiRouter.post("/auth/login", authController.login);
 pazientiRouter.post("/auth/refreshToken", authController.refreshToken);
 pazientiRouter.post("/auth/logout", authController.logout);

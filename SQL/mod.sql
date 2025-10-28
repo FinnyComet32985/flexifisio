@@ -44,7 +44,7 @@ CREATE TABLE refresh_tokens (
 );
 
 CREATE EVENT IF NOT EXISTS cleanup_expired_refresh_tokens
-ON SCHEDULE EVERY 1 HOURS
+ON SCHEDULE EVERY 1 HOUR
 DO
 DELETE FROM refresh_tokens WHERE expires_at < NOW() OR revoked = 1;
 
@@ -298,45 +298,3 @@ CREATE TABLE SchedaEsercizi (
     FOREIGN KEY (scheda_id) REFERENCES SchedeAllenamento(id) ON DELETE CASCADE,
     FOREIGN KEY (esercizio_id) REFERENCES Esercizi(id)
 );
-
-INSERT INTO Fisioterapisti (nome, cognome, email, password)
-VALUES
-( 'Mario', 'Rossi', 'mario.rossi@example.com', 'password'),
-( 'Luigi', 'Verdi', 'luigi.verdi@example.com', 'password');
-
-INSERT INTO Pazienti ( nome, cognome, email, data_nascita, password, genere, altezza, peso, diagnosi)
-VALUES
-('Giorgio', 'Bianchi', 'giorgio.bianchi@example.com', '1990-01-01', 'password', 'M', 1.8, 70.0, 'Diagnosi esempio'),
-( 'Marco', 'Neri', 'marco.neri@example.com', '1995-06-01', 'password', 'M', 1.7, 60.0, 'Diagnosi esempio');
-
--- Un paziente seguito da un fisioterapista
-INSERT INTO Trattamenti (paziente_id, fisioterapista_id, data_inizio)
-VALUES
-(1, 1, '2023-01-01');
-
--- Lo stesso paziente non può essere seguito da un altro fisioterapista nello stesso periodo
--- Questa insert dovrebbe fallire a causa del trigger `before_insert_trattamento`
-INSERT INTO Trattamenti (paziente_id, fisioterapista_id, data_inizio)
-VALUES
-(1, 2, '2023-01-01');
-
--- Aggiorna l'istanza con id paziente 1
-UPDATE Trattamenti
-SET data_fine = CURRENT_DATE, in_corso = FALSE
-WHERE paziente_id = 1 AND fisioterapista_id = 1;
-
--- Crea una nuova istanza con fisioterapista 2 e data odierna
-INSERT INTO Trattamenti (paziente_id, fisioterapista_id, data_inizio)
-VALUES (1, 2, CURRENT_DATE);
-
-
--- Un fisioterapista può seguire più pazienti nello stesso periodo
-INSERT INTO Trattamenti (paziente_id, fisioterapista_id, data_inizio)
-VALUES
-(2, 1, '2023-01-01');
-
-select Pazienti.nome, Pazienti.cognome, Fisioterapisti.nome, Fisioterapisti.cognome, Trattamenti.*
-from Pazienti join Trattamenti on Pazienti.id = Trattamenti.paziente_id join Fisioterapisti on Trattamenti.fisioterapista_id = Fisioterapisti.id;
-
-insert into appuntamenti (data_appuntamento, ora_appuntamento,trattamento_id)
-values ('2023-01-01', '15:00', 1);
