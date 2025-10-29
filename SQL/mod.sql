@@ -298,3 +298,28 @@ CREATE TABLE SchedaEsercizi (
     FOREIGN KEY (scheda_id) REFERENCES SchedeAllenamento(id) ON DELETE CASCADE,
     FOREIGN KEY (esercizio_id) REFERENCES Esercizi(id)
 );
+
+-- ✅ Nuova tabella: sessioni di allenamento
+CREATE TABLE SessioniAllenamento (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cliente_id INT NOT NULL,
+    fisioterapista_id INT NOT NULL,
+    scheda_id INT NOT NULL,
+    data_sessione DATETIME DEFAULT CURRENT_TIMESTAMP,
+    sondaggio JSON, -- contiene le risposte del cliente alla fine
+    FOREIGN KEY (cliente_id) REFERENCES Clienti(id),
+    FOREIGN KEY (fisioterapista_id) REFERENCES Fisioterapisti(id),
+    FOREIGN KEY (scheda_id) REFERENCES SchedeAllenamento(id)
+);
+
+-- ✅ Tabella per gli esercizi svolti durante la sessione
+CREATE TABLE SessioneEsercizi (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sessione_id INT NOT NULL,
+    esercizio_id INT NOT NULL,
+    ripetizioni_effettive INT,
+    serie_effettive INT,
+    note TEXT,
+    FOREIGN KEY (sessione_id) REFERENCES SessioniAllenamento(id) ON DELETE CASCADE,
+    FOREIGN KEY (esercizio_id) REFERENCES Esercizi(id)
+);

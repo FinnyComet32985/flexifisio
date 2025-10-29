@@ -7,6 +7,7 @@ import * as trattamentiController from "../../controllers/pazienti/trattamentiCo
 import * as appuntamentiController from "../../controllers/pazienti/appuntamentiController";
 import * as messaggiController from "../../controllers/pazienti/messaggiController";
 import * as schedeController from "../../controllers/pazienti/schedeController";
+import * as sessioniController from "../../controllers/pazienti/sessioniController";
 
 // Middleware
 import { pazientiAuth } from "../../middleware/pazientiAuth";
@@ -50,4 +51,10 @@ pazientiRouter.post("/creaMessaggi", pazientiAuth, messaggiController.createMess
    SCHEDE ALLENAMENTO (PROTETTO)
    ======================================================= */
 pazientiRouter.get("/schede", pazientiAuth, schedeController.listSchede);
+pazientiRouter.get("/schede/:id_s", pazientiAuth, schedeController.getSchedaById);
 
+pazientiRouter.post("/", pazientiAuth, sessioniController.createSessione);
+pazientiRouter.post("/cliente", pazientiAuth, sessioniController.listSessioniByCliente);
+pazientiRouter.get("/:id", pazientiAuth, sessioniController.getSessioneById);
+pazientiRouter.put("/:id/sondaggio", pazientiAuth, sessioniController.saveSondaggio);
+pazientiRouter.put("/:id/esercizio", pazientiAuth, sessioniController.updateEsercizioSessione);
