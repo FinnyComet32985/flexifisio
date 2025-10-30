@@ -31,7 +31,7 @@ export async function listSchede(req: Request, res: Response) {
 
 export async function getSchedaById(req: Request, res: Response) {
   try {
-    const { id } = req.params;
+    const { id_s } = req.params;
 
     const [schedaRows] = await pool.query<RowDataPacket[]>(
       `SELECT s.*, f.nome AS fisioterapista_nome, f.cognome AS fisioterapista_cognome
@@ -39,7 +39,7 @@ export async function getSchedaById(req: Request, res: Response) {
        JOIN Trattamenti t ON s.trattamento_id = t.id
        JOIN Fisioterapisti f ON t.fisioterapista_id = f.id
        WHERE s.id = ?`,
-      [id]
+      [id_s]
     );
 
     if (schedaRows.length === 0) {
@@ -56,7 +56,7 @@ export async function getSchedaById(req: Request, res: Response) {
        FROM SchedaEsercizi se
        JOIN Esercizi e ON se.esercizio_id = e.id
        WHERE se.scheda_id = ?`,
-      [id]
+      [id_s]
     );
 
     const data = {
