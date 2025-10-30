@@ -46,7 +46,7 @@ export async function registerEmail(req: Request, res: Response) {
     
     if (existsAccount[0].password) {
       return res
-        .status(HttpStatus.CONFLICT.code) // 409
+        .status(HttpStatus.OK.code) // 409
         .json(
           new ResponseModel(
             HttpStatus.CONFLICT.code,
@@ -86,7 +86,6 @@ export async function register(req: Request, res: Response) {
       password,
     } = req.body;
 
-    // Validazioni dei campi obbligatori (nome, cognome, email, data_nascita, password, genere)
     if (
       !email ||
       !password
@@ -138,17 +137,9 @@ export async function register(req: Request, res: Response) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await pool.query(
-      `
-      UPDATE Pazienti 
-      SET 
-        password = ?,
-      WHERE id = ?
-      `,
-      [
-        hashedPassword,
-        pazienteId // Usa l'ID per l'aggiornamento
-      ]
+    await pool.query<RowDataPacket[]>(
+      "UPDATE Pazienti SET password = ? WHERE id = ?",
+      [hashedPassword, pazienteId]
     );
 
     // 4. Risposta di successo

@@ -299,20 +299,20 @@ CREATE TABLE SchedaEsercizi (
     FOREIGN KEY (esercizio_id) REFERENCES Esercizi(id)
 );
 
--- ✅ Nuova tabella: sessioni di allenamento
+-- sessioni di allenamento
 CREATE TABLE SessioniAllenamento (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    cliente_id INT NOT NULL,
+    paziente_id INT NOT NULL,
     fisioterapista_id INT NOT NULL,
     scheda_id INT NOT NULL,
     data_sessione DATETIME DEFAULT CURRENT_TIMESTAMP,
-    sondaggio JSON, -- contiene le risposte del cliente alla fine
-    FOREIGN KEY (cliente_id) REFERENCES Clienti(id),
+    sondaggio JSON, -- contiene le risposte del paziente alla fine
+    FOREIGN KEY (paziente_id) REFERENCES Pazienti(id),
     FOREIGN KEY (fisioterapista_id) REFERENCES Fisioterapisti(id),
     FOREIGN KEY (scheda_id) REFERENCES SchedeAllenamento(id)
 );
 
--- ✅ Tabella per gli esercizi svolti durante la sessione
+-- esercizi svolti durante la sessione
 CREATE TABLE SessioneEsercizi (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sessione_id INT NOT NULL,
