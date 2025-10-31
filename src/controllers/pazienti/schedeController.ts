@@ -34,7 +34,7 @@ export async function getSchedaById(req: Request, res: Response) {
     const { id_s } = req.params;
 
     const [schedaRows] = await pool.query<RowDataPacket[]>(
-      `SELECT s.*, f.nome AS fisioterapista_nome, f.cognome AS fisioterapista_cognome
+      `SELECT s.*, f.id as id_fisioterapista, f.nome AS fisioterapista_nome, f.cognome AS fisioterapista_cognome
        FROM SchedeAllenamento s
        JOIN Trattamenti t ON s.trattamento_id = t.id
        JOIN Fisioterapisti f ON t.fisioterapista_id = f.id

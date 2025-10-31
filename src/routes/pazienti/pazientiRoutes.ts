@@ -54,8 +54,8 @@ pazientiRouter.post("/creaMessaggi", pazientiAuth, messaggiController.createMess
 pazientiRouter.get("/schede", pazientiAuth, schedeController.listSchede);
 pazientiRouter.get("/schede/:id_s", pazientiAuth, schedeController.getSchedaById);
 
-pazientiRouter.post("/", pazientiAuth, sessioniController.createSessione);
-pazientiRouter.post("/cliente", pazientiAuth, sessioniController.listSessioniByCliente);
-pazientiRouter.get("/:id", pazientiAuth, sessioniController.getSessioneById);
-pazientiRouter.put("/:id/sondaggio", pazientiAuth, sessioniController.saveSondaggio);
-pazientiRouter.put("/:id/esercizio", pazientiAuth, sessioniController.updateEsercizioSessione);
+pazientiRouter.post("/sessioni/", pazientiAuth, sessioniController.createSessione);
+pazientiRouter.get("/sessioni/lista", pazientiAuth, sessioniController.listSessioniByCliente);
+pazientiRouter.get("/sessioni/:id", pazientiAuth, sessioniController.getSessioneById);
+pazientiRouter.put("/sessioni/:id/sondaggio", pazientiAuth, sessioniController.saveSondaggio);
+pazientiRouter.put("/sessioni/:id/esercizio", pazientiAuth, sessioniController.updateEsercizioSessione);

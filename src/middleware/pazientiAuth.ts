@@ -30,7 +30,8 @@ export function pazientiAuth(req: Request, res: Response, next: NextFunction): v
     const secret = process.env.ACCESS_TOKEN_SECRETE || "";
 
     const decoded = jwt.verify(token, secret) as JwtPayload;
-    (req as any).body = { id: decoded.id };
+    const body = { id: decoded.id, ...req.body };
+    (req as any).body = body;
 
     next();
   } catch (err: any) {
