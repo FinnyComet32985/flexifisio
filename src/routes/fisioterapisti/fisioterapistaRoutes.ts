@@ -170,7 +170,7 @@ fisioterapistaRouter.patch(
 
 // api per i dati della sessione
 fisioterapistaRouter.get(
-    "/trainingSession/:trainingCardId",
+    "/trainingSessions/:trainingCardId",
     authenticateJWT,
     trainingSessionController.handleGetTrainingSessions
 );
