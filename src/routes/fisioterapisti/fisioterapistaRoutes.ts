@@ -7,6 +7,7 @@ import * as chatController from "../../controllers/fisioterapisti/chatController
 import * as exerciseController from "../../controllers/fisioterapisti/exerciseController";
 import * as appointmentController from "../../controllers/fisioterapisti/appointmentController";
 import * as trainingCardController from "../../controllers/fisioterapisti/trainingCardController";
+import * as trainingSessionController from "../../controllers/fisioterapisti/trainingSessionController";
 
 export const fisioterapistaRouter = Router();
 
@@ -149,8 +150,6 @@ fisioterapistaRouter.post(
     trainingCardController.handleAddExerciseToTrainingCard
 );
 
-//! verificare il funzionamento
-
 fisioterapistaRouter.get(
     "/trainingCard/:id/exercise",
     authenticateJWT,
@@ -169,5 +168,16 @@ fisioterapistaRouter.patch(
     trainingCardController.handleUpdateExerciseFromTrainingCard
 );
 
-//TODO mancano i dati da considerare per creare il grafico nel profilo
-//TODO manca la visualizzazione dei questionari compilati dagli utenti
+fisioterapistaRouter.get(
+    "/trainingSession/:trainingCardId",
+    authenticateJWT,
+    trainingSessionController.handleGetTrainingSessions
+);
+
+fisioterapistaRouter.get(
+    "/trainingSession/:sessionId",
+    authenticateJWT,
+    trainingSessionController.handleGetTrainingSession
+);
+// api per dati sondaggi
+// api per i dati della sessione
