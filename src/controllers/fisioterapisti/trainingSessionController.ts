@@ -105,6 +105,47 @@ export const handleGetTrainingSession = async (req: Request, res: Response) => {
     }
 };
 
+export const handleGetGraphData = async (req: Request, res: Response) => {
+    const { trainingCardId } = req.params;
+    const fisioterapistaId = req.body.jwtPayload.id;
+
+    try {
+        // 1. Verify access to the training card
+        const [rows] = await pool.query<RowDataPacket[]>(
+            "SELECT trattamento_id from schedeallenamento where id=?;",
+            [trainingCardId]
+        );
+
+        if (rows.length === 0) {
+            return res
+                .status(404)
+                .json({ message: "Nessuna scheda di allenamento trovata" });
+        }
+
+        const [trattamento] = await pool.query<RowDataPacket[]>(
+            "SELECT id FROM trattamenti WHERE fisioterapista_id = ? AND id = ? AND in_corso = 1;",
+            [fisioterapistaId, rows[0].trattamento_id]
+        );
+
+        if (trattamento.length === 0) {
+            return res
+                .status(403)
+                .json({ message: "Accesso non consentito a questa scheda." });
+        }
+
+        // 2. Get session data
+        const [graphData] = await pool.query<RowDataPacket[]>(
+            "SELECT id, data_sessione, sondaggio FROM sessioniallenamento WHERE scheda_id = ?;",
+            [trainingCardId]
+        );
+
+        return res.status(200).json(graphData);
+    } catch (error) {
+        const err = error as Error;
+        return res.status(500).json({ message: err.message });
+    }
+};
+
 /*
 SESSIONIALLENAMENTO
 data_sessione, 

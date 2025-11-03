@@ -168,6 +168,7 @@ fisioterapistaRouter.patch(
     trainingCardController.handleUpdateExerciseFromTrainingCard
 );
 
+// api per i dati della sessione
 fisioterapistaRouter.get(
     "/trainingSession/:trainingCardId",
     authenticateJWT,
@@ -179,5 +180,10 @@ fisioterapistaRouter.get(
     authenticateJWT,
     trainingSessionController.handleGetTrainingSession
 );
-// api per dati sondaggi
-// api per i dati della sessione
+
+// api per i dati dei grafici
+fisioterapistaRouter.get(
+    "/trainingSession/graph/:trainingCardId",
+    authenticateJWT,
+    trainingSessionController.handleGetGraphData
+);
