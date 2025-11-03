@@ -9,6 +9,11 @@ export const handleGetTrainingSessions = async (
     res: Response
 ) => {
     const { trainingCardId } = req.params;
+
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
+
     const fisioterapistaId = req.body.jwtPayload.id;
 
     try {
@@ -48,6 +53,11 @@ export const handleGetTrainingSessions = async (
 
 export const handleGetTrainingSession = async (req: Request, res: Response) => {
     const { sessionId } = req.params;
+
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
+
     const fisioterapistaId = req.body.jwtPayload.id;
 
     try {
@@ -110,6 +120,11 @@ export const handleGetGraphDataByPatient = async (
     res: Response
 ) => {
     const { pazienteId } = req.params;
+
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
+
     const fisioterapistaId = req.body.jwtPayload.id;
 
     try {

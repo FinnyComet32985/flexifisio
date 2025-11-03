@@ -120,8 +120,8 @@ export const handleRefreshToken = async (req: Request, res: Response) => {
             refreshToken,
             refreshTokenSecret,
             (err: jwt.VerifyErrors | null, decoded: any) => {
-                if (err || rows[0].id !== decoded.id) {
-                    res.sendStatus(403);
+                if (err || !decoded || rows[0].id !== decoded.id) {
+                    return res.sendStatus(403);
                 }
                 const accessToken = jwt.sign(
                     { id: decoded.id },
@@ -171,7 +171,12 @@ export const handleLogout = async (req: Request, res: Response) => {
 
 export const handleChangePassword = async (req: Request, res: Response) => {
     const { oldPassword, newPassword } = req.body;
+
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
+
     if (!oldPassword || !newPassword) {
         res.status(400).json({
             message: "Le password sono obbligatorie",

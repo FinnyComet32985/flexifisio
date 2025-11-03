@@ -3,6 +3,9 @@ import { Request, Response } from "express";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export const handleGetProfile = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
 
     const [rows] = await pool.query<RowDataPacket[]>(
@@ -18,6 +21,9 @@ export const handleGetProfile = async (req: Request, res: Response) => {
 };
 
 export const handleUpdateProfile = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const { nome, cognome, email } = req.body;
 

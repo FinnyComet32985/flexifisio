@@ -4,6 +4,9 @@ import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 // crea esercizio
 export const handleCreateExercise = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
 
     const {
@@ -47,6 +50,9 @@ export const handleCreateExercise = async (req: Request, res: Response) => {
 };
 // ricerca esercizi
 export const handleGetExercises = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const id = req.params.id;
 
@@ -76,6 +82,9 @@ export const handleGetExercises = async (req: Request, res: Response) => {
 };
 
 export const handleUpdateExercise = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapista_id = req.body.jwtPayload.id;
     const id = req.params.id;
     const {
@@ -162,6 +171,9 @@ export const handleUpdateExercise = async (req: Request, res: Response) => {
 
 // cancella esercizio
 export const handleDeleteExercises = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const id = req.params.id;
 

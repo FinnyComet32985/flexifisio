@@ -5,6 +5,9 @@ import { RowDataPacket, ResultSetHeader } from "mysql2";
 // visualizza chat
 // visualizza chat
 export const handleGetChat = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const paziente_id = req.params.id;
 
@@ -68,6 +71,9 @@ export const handleGetChat = async (req: Request, res: Response) => {
 
 // invia messaggio
 export const handleSendMessage = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const paziente_id = req.params.id;
     const testo = req.body.testo;

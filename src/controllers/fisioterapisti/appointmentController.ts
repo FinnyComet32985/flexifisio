@@ -4,6 +4,9 @@ import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 // crea appuntamento
 export const handleCreateAppointment = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const paziente_id = req.params.id;
     const { data_appuntamento, ora_appuntamento } = req.body;
@@ -45,6 +48,9 @@ export const handleCreateAppointment = async (req: Request, res: Response) => {
 };
 
 export const handleConfirmAppointment = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const appuntamento_id = req.params.id;
 
@@ -87,6 +93,9 @@ export const handleConfirmAppointment = async (req: Request, res: Response) => {
 
 // update appuntamento
 export const handleUpdateAppointment = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const appuntamento_id = req.params.id;
     const { data_appuntamento, ora_appuntamento } = req.body;
@@ -134,6 +143,9 @@ export const handleUpdateAppointment = async (req: Request, res: Response) => {
 };
 // elimina appuntamento
 export const handleDeleteAppointments = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const appuntamento_id = req.params.id;
     const [result] = await pool.query<RowDataPacket[]>(
@@ -167,6 +179,9 @@ export const handleDeleteAppointments = async (req: Request, res: Response) => {
 };
 // mostra appuntamenti
 export const handleGetAppointments = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const paziente_id = req.params.id;
 

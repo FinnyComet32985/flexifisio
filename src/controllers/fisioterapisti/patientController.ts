@@ -4,6 +4,9 @@ import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 // ricerca paziente
 export const handleGetPatient = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
 
     const pazienteId = req.params.id;
@@ -48,6 +51,9 @@ export const handleGetPatient = async (req: Request, res: Response) => {
 
 // fine trattamento
 export const handleEndTreatment = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const pazienteId = parseInt(req.params.id);
     try {
@@ -70,6 +76,9 @@ export const handleEndTreatment = async (req: Request, res: Response) => {
 
 // inizia trattamento
 export const handleNewPatient = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const email = req.body.email;
 
@@ -149,6 +158,9 @@ export const handleNewPatient = async (req: Request, res: Response) => {
 };
 
 export const handleUpdatePatient = async (req: Request, res: Response) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
     const fisioterapistaId = req.body.jwtPayload.id;
     const pazienteId = parseInt(req.params.id);
     const { altezza, peso, diagnosi } = req.body;
