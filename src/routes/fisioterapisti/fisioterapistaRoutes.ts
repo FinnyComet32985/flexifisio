@@ -183,7 +183,7 @@ fisioterapistaRouter.get(
 
 // api per i dati dei grafici
 fisioterapistaRouter.get(
-    "/trainingSession/graph/:trainingCardId",
+    "/trainingSession/graph/:pazienteId",
     authenticateJWT,
-    trainingSessionController.handleGetGraphData
+    trainingSessionController.handleGetGraphDataByPatient
 );

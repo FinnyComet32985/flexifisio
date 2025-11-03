@@ -105,41 +105,54 @@ export const handleGetTrainingSession = async (req: Request, res: Response) => {
     }
 };
 
-export const handleGetGraphData = async (req: Request, res: Response) => {
-    const { trainingCardId } = req.params;
+export const handleGetGraphDataByPatient = async (
+    req: Request,
+    res: Response
+) => {
+    const { pazienteId } = req.params;
     const fisioterapistaId = req.body.jwtPayload.id;
 
     try {
-        // 1. Verify access to the training card
-        const [rows] = await pool.query<RowDataPacket[]>(
-            "SELECT trattamento_id from schedeallenamento where id=?;",
-            [trainingCardId]
-        );
-
-        if (rows.length === 0) {
-            return res
-                .status(404)
-                .json({ message: "Nessuna scheda di allenamento trovata" });
-        }
-
+        // 1. Verify access to the patient's treatment
         const [trattamento] = await pool.query<RowDataPacket[]>(
             "SELECT id FROM trattamenti WHERE fisioterapista_id = ? AND id = ? AND in_corso = 1;",
-            [fisioterapistaId, rows[0].trattamento_id]
+            [fisioterapistaId, pazienteId]
         );
 
         if (trattamento.length === 0) {
             return res
                 .status(403)
-                .json({ message: "Accesso non consentito a questa scheda." });
+                .json({ message: "Accesso non consentito a questo paziente." });
         }
 
-        // 2. Get session data
-        const [graphData] = await pool.query<RowDataPacket[]>(
-            "SELECT id, data_sessione, sondaggio FROM sessioniallenamento WHERE scheda_id = ?;",
-            [trainingCardId]
+        const trattamentoId = trattamento[0].id;
+
+        // 2. Get all training cards for the treatment
+        const [schede] = await pool.query<RowDataPacket[]>(
+            "SELECT id, nome FROM schedeallenamento WHERE trattamento_id = ?;",
+            [trattamentoId]
         );
 
-        return res.status(200).json(graphData);
+        if (schede.length === 0) {
+            return res.status(200).json([]); // No cards, return empty array
+        }
+
+        // 3. For each card, get its sessions
+        const result = [];
+        for (const scheda of schede) {
+            const [sessioni] = await pool.query<RowDataPacket[]>(
+                "SELECT id, data_sessione, sondaggio FROM sessioniallenamento WHERE scheda_id = ?;",
+                [scheda.id]
+            );
+
+            result.push({
+                id_scheda: scheda.id,
+                nome_scheda: scheda.nome,
+                sessioni: sessioni,
+            });
+        }
+
+        return res.status(200).json(result);
     } catch (error) {
         const err = error as Error;
         return res.status(500).json({ message: err.message });
