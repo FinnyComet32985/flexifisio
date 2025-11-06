@@ -60,7 +60,7 @@ CREATE TABLE Trattamenti (
     in_corso BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (paziente_id) REFERENCES Pazienti(id),
     FOREIGN KEY (fisioterapista_id) REFERENCES Fisioterapisti(id),
-    CHECK (data_fine IS NULL OR data_fine > data_inizio)
+    CHECK (data_fine IS NULL OR data_fine >= data_inizio)
 );
 
 
