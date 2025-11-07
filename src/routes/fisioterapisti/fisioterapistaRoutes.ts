@@ -36,6 +36,11 @@ fisioterapistaRouter.patch(
 
 // gestione pazienti
 fisioterapistaRouter.get(
+    "/patient/terminated",
+    authenticateJWT,
+    patientController.handleGetTerminatedPatients
+);
+fisioterapistaRouter.get(
     "/patient/:id?",
     authenticateJWT,
     patientController.handleGetPatient

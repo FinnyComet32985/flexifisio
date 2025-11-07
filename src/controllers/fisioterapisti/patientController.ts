@@ -42,10 +42,25 @@ export const handleGetPatient = async (req: Request, res: Response) => {
             }
 
             if (rows_trattamenti[0].in_corso === 0) {
-                // Il trattamento esiste ma è terminato, quindi l'accesso è proibito
-                return res.status(403).json({
-                    message: "Il trattamento per questo paziente è terminato.",
-                });
+                const [rows] = await pool.query<RowDataPacket[]>(
+                    `SELECT 
+                        Pazienti.id, Pazienti.email, Pazienti.nome, Pazienti.cognome, Pazienti.data_nascita, Pazienti.genere, Pazienti.altezza, Pazienti.peso, Pazienti.diagnosi, 
+                        Trattamenti.data_inizio, Trattamenti.data_fine,
+                        COUNT(CASE WHEN Appuntamenti.data_appuntamento < CURRENT_DATE THEN 1 ELSE NULL END) as sedute_effettuate
+                    FROM Trattamenti 
+                    JOIN Pazienti ON Trattamenti.paziente_id = Pazienti.id 
+                    LEFT JOIN Appuntamenti ON Trattamenti.id = Appuntamenti.trattamento_id
+                    WHERE Trattamenti.fisioterapista_id = ? AND Pazienti.id = ?
+                    GROUP BY Pazienti.id, Trattamenti.id;`,
+                    [fisioterapistaId, pazienteId]
+                );
+                if (rows.length === 0) {
+                    return res.status(404).json({
+                        message: "Dettagli paziente non trovati",
+                    });
+                }
+
+                return res.status(200).json(rows[0]);
             }
 
             // Recupera i dettagli completi del paziente
@@ -333,6 +348,44 @@ export const handleUpdatePatient = async (req: Request, res: Response) => {
         return res.status(500).json({
             message:
                 "Errore interno del server durante la modifica dei dati del paziente: " +
+                err.message,
+        });
+    }
+};
+
+// visualizza i pazienti con cui ha terminato il trattamento
+export const handleGetTerminatedPatients = async (
+    req: Request,
+    res: Response
+) => {
+    if (!req.body.jwtPayload) {
+        return res.status(401).json({ message: "Autenticazione richiesta." });
+    }
+
+    try {
+        const fisioterapistaId = req.body.jwtPayload.id;
+
+        // Seleziona i pazienti associati al fisioterapista con trattamenti non più in corso
+        const [rows] = await pool.query<RowDataPacket[]>(
+            `SELECT P.id, P.nome, P.cognome, T.data_fine
+             FROM Pazienti P
+             JOIN Trattamenti T ON P.id = T.paziente_id
+             WHERE T.fisioterapista_id = ? AND T.in_corso = 0;`,
+            [fisioterapistaId]
+        );
+
+        if (rows.length === 0) {
+            // La richiesta è valida, ma non ci sono pazienti con trattamenti terminati
+            return res.status(204).send();
+        }
+
+        return res.status(200).json(rows);
+    } catch (error) {
+        console.error("Errore in handleGetTerminatedPatients:", error);
+        const err = error as Error;
+        return res.status(500).json({
+            message:
+                "Errore interno del server durante il recupero dei pazienti con trattamenti terminati: " +
                 err.message,
         });
     }
