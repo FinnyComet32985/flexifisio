@@ -130,7 +130,7 @@ export const handleGetGraphDataByPatient = async (
     try {
         // 1. Verify access to the patient's treatment
         const [trattamento] = await pool.query<RowDataPacket[]>(
-            "SELECT id FROM trattamenti WHERE fisioterapista_id = ? AND id = ? AND in_corso = 1;",
+            "SELECT id FROM trattamenti WHERE fisioterapista_id = ? AND paziente_id = ? AND in_corso = 1;",
             [fisioterapistaId, pazienteId]
         );
 
