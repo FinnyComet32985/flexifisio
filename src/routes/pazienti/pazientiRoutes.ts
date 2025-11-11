@@ -45,6 +45,7 @@ pazientiRouter.post("/creaAppuntamento", pazientiAuth, appuntamentiController.cr
 /* =======================================================
    MESSAGGI (PROTETTO)
    ======================================================= */
+pazientiRouter.get("/fisioterapista", pazientiAuth, messaggiController.getFisioterapista);
 pazientiRouter.get("/messaggi", pazientiAuth, messaggiController.listMessaggi);
 pazientiRouter.post("/creaMessaggi", pazientiAuth, messaggiController.createMessaggio);
 

@@ -5,6 +5,33 @@ import HttpStatus from "../../utils/httpstatus";
 import ResponseModel from "../../utils/response";
 
 /**
+ * 🔹 GET - Nome fisioterapista
+ */
+export async function getFisioterapista(req: Request, res: Response) {
+  try {
+    const { id } = req.body;
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `
+        SELECT f.nome, f.cognome
+        FROM fisioterapisti f JOIN Trattamenti t 
+        ON f.id = t.id 
+        WHERE t.paziente_id = ?
+      `,
+      [id]
+    );
+
+    res.status(HttpStatus.OK.code).json(
+      new ResponseModel(HttpStatus.OK.code, HttpStatus.OK.status, "Nome Fisioterapista", rows[0])
+    );
+  } catch (err: any) {
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR.code).json(
+      new ResponseModel(HttpStatus.INTERNAL_SERVER_ERROR.code, HttpStatus.INTERNAL_SERVER_ERROR.status, err.message)
+    );
+  }
+}
+
+/**
  * 🔹 GET - Lista messaggi del paziente
  */
 export async function listMessaggi(req: Request, res: Response) {
