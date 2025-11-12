@@ -13,10 +13,18 @@ export async function getFisioterapista(req: Request, res: Response) {
 
     const [rows] = await pool.query<RowDataPacket[]>(
       `
-        SELECT f.nome, f.cognome
-        FROM fisioterapisti f JOIN Trattamenti t 
-        ON f.id = t.id 
-        WHERE t.paziente_id = ?
+SELECT
+    F.nome,
+    F.cognome,
+    T.id
+FROM
+    Pazienti AS P
+JOIN
+    Trattamenti AS T ON P.id = T.paziente_id
+JOIN
+    Fisioterapisti AS F ON T.fisioterapista_id = F.id
+WHERE
+    P.id = ?;
       `,
       [id]
     );
